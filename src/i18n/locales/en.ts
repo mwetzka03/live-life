@@ -480,6 +480,7 @@ export const en = {
 
   boot: {
     starting: 'Starting Live Life…',
+    remindersRuntime: 'Preparing Apple Reminders…',
     syncing: 'Syncing calendars and reminders…',
   },
 

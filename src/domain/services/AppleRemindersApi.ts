@@ -52,7 +52,6 @@ function toConfig(
   };
 }
 
-/** Tauri invoke wirft oft Strings statt Error-Instanzen. */
 export function invokeErrorText(error: unknown): string {
   if (typeof error === 'string') return error;
   if (error instanceof Error) return error.message;
@@ -95,6 +94,12 @@ export class AppleRemindersApi {
     if (!isTauriApp()) {
       throw new Error('Apple Reminders (Beta) ist nur in der Desktop-App verfügbar.');
     }
+  }
+
+  /** Installiert Python + pyicloud still im Hintergrund (Windows). */
+  static async ensureRuntime(): Promise<string> {
+    if (!isTauriApp()) return 'skipped';
+    return invoke<string>('apple_reminders_ensure_runtime');
   }
 
   static async testConnection(

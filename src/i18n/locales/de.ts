@@ -480,6 +480,7 @@ export const de = {
 
   boot: {
     starting: 'Live Life wird gestartet…',
+    remindersRuntime: 'Apple Reminders wird vorbereitet…',
     syncing: 'Kalender und Erinnerungen werden synchronisiert…',
   },
 

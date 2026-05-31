@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { isTauriApp } from '../domain/services/CalDavApi';
+import { AppleRemindersApi } from '../domain/services/AppleRemindersApi';
+import { invokeErrorText } from '../domain/services/AppleRemindersApi';
 import { getAppState } from '../domain/services/AppStateService';
 import { translate } from '../i18n/translate';
 import { LOCALE_STORAGE_KEY, type Locale } from '../i18n/types';
@@ -54,6 +56,18 @@ export function useAppBoot() {
       const welcomeStart = Date.now();
       const app = getAppState();
       app.repairReminderChallengeLinks();
+
+      if (isTauriApp()) {
+        splashRef.current.updateMessage(bootT('boot.remindersRuntime'));
+        await yieldToUi();
+        try {
+          const msg = await AppleRemindersApi.ensureRuntime();
+          devLog(msg, 'ok', 'Boot');
+        } catch (error) {
+          devLog(`Apple Reminders Setup: ${invokeErrorText(error)}`, 'warn', 'Boot');
+        }
+      }
+
       devLog(
         `State geladen: ${app.challenges.getAll().length} Challenges, ${app.calendar.getAll().length} Termine, ${app.appleRemindersAccounts.getAll().length} Apple-Konten`,
         'ok',

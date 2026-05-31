@@ -12,27 +12,82 @@ Lokale Desktop-App (Tauri + React) zur Gamification des Alltags: Kalender, Chall
 - **Dark/Light Mode** und adaptive UI
 - **100 % lokal** – Daten in `localStorage`
 
-### Entwickeln
+---
+
+## Für Nutzer (empfohlen)
+
+1. Öffne [Releases](https://github.com/mwetzka03/live-life/releases)
+2. Lade **`Live Life_*_x64-setup.exe`** herunter
+3. Installer starten → App aus dem Startmenü öffnen
+
+Kein Node, kein Rust, kein Git nötig.
+
+**Apple Reminders (Beta):** Python + pyicloud werden **automatisch** installiert (still im Hintergrund):
+- beim **Setup-Installer** (NSIS, nach der Installation)
+- beim **ersten App-Start** (Splash: „Apple Reminders wird vorbereitet…“)
+
+Keine Konsoleneingabe nötig. Einmalig ggf. **UAC-/winget-Dialog** von Windows bestätigen.
+
+Log bei Problemen: `%LOCALAPPDATA%\live-life\reminders-setup.log`
+
+---
+
+## Ein-Klick-Start aus dem Quellcode (Windows)
+
+Repo klonen oder ZIP entpacken, dann **eine Datei** doppelklicken:
+
+```
+Start-LiveLife.vbs
+```
+
+(Alternativ `Start-LiveLife.cmd` – zeigt ein Konsolenfenster.)
+
+Das Skript (beim ersten Mal, ca. 10–20 Min.):
+
+- installiert fehlende Tools per **winget** (Node.js, Python, Rust – mit Bestätigung)
+- `npm install`
+- `pip install pyicloud tzlocal` (Apple Reminders)
+- baut die Desktop-App und startet sie
+
+Weitere Starts: direkt die gebaute App, wenn `release\LiveLife.exe` existiert.
+
+Nur Abhängigkeiten prüfen:
 
 ```powershell
-cd C:\Users\mawet\live-life
+powershell -ExecutionPolicy Bypass -File scripts/setup-deps.ps1
+```
+
+Release-Installer lokal bauen:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/start-app.ps1 -BuildOnly
+```
+
+Installer liegt unter `src-tauri\target\release\bundle\nsis\`.
+
+---
+
+## Entwickeln
+
+```powershell
 npm install
 npm run dev:win
 ```
 
-Alternativ nur im Browser (ohne Tauri-Fenster):
+Alternativ nur im Browser (ohne Tauri/CalDAV):
 
 ```powershell
 npm run dev
 ```
 
-### Release-EXE bauen
+### Release auf GitHub veröffentlichen
 
 ```powershell
-npm run build:win
+git tag v0.1.0
+git push origin v0.1.0
 ```
 
-Die EXE liegt danach unter `release/LiveLife.exe`.
+GitHub Actions baut automatisch den Windows-Installer und hängt ihn ans Release.
 
 ### Architektur
 

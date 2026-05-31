@@ -89,6 +89,11 @@ fn apple_reminders_delete(config: AppleRemindersConfigDto) -> Result<String, Str
   icloud_reminders::delete_reminder(&config)
 }
 
+#[tauri::command]
+fn apple_reminders_ensure_runtime() -> Result<String, String> {
+  icloud_reminders::ensure_reminders_runtime()
+}
+
 fn main() {
   tauri::Builder::default()
     .setup(|app| {
@@ -112,6 +117,7 @@ fn main() {
       apple_reminders_set_status,
       apple_reminders_create,
       apple_reminders_delete,
+      apple_reminders_ensure_runtime,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

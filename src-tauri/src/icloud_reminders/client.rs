@@ -44,7 +44,7 @@ pub struct AppleRemindersListDto {
 }
 
 fn bridge_script_path() -> PathBuf {
-  PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../scripts/apple_reminders_bridge.py")
+  crate::icloud_reminders::runtime::bridge_script_path()
 }
 
 fn cookie_dir(apple_id: &str) -> Result<PathBuf, String> {
@@ -75,7 +75,7 @@ fn cookie_dir(apple_id: &str) -> Result<PathBuf, String> {
   Ok(target)
 }
 
-fn python_executable() -> Result<String, String> {
+fn find_python_with_pyicloud() -> Result<String, String> {
   let candidates: [(&str, &[&str]); 4] = [
     ("python", &[]),
     ("python3", &[]),
@@ -89,7 +89,7 @@ fn python_executable() -> Result<String, String> {
       check.arg(arg);
     }
     let ok = check
-      .args(["-c", "import pyicloud"])
+      .args(["-c", "import pyicloud, tzlocal"])
       .output()
       .map(|o| o.status.success())
       .unwrap_or(false);
@@ -102,25 +102,18 @@ fn python_executable() -> Result<String, String> {
     }
   }
 
-  // Python da, aber pyicloud fehlt?
-  for candidate in ["python", "python3", "py"] {
-    let ok = Command::new(candidate)
-      .arg("--version")
-      .output()
-      .map(|o| o.status.success())
-      .unwrap_or(false);
-    if ok {
-      return Err(
-        "pyicloud nicht im Python gefunden, das Live Life nutzt. Installiere mit dem gleichen Python: python -m pip install pyicloud tzlocal"
-          .into(),
-      );
-    }
-  }
+  Err("Python 3 mit pyicloud/tzlocal nicht gefunden.".into())
+}
 
-  Err(
-    "Python 3 nicht gefunden. Für Apple Reminders (Beta): Python installieren und pip install pyicloud tzlocal"
-      .into(),
-  )
+fn python_executable() -> Result<String, String> {
+  if let Ok(p) = find_python_with_pyicloud() {
+    return Ok(p);
+  }
+  crate::icloud_reminders::runtime::ensure_reminders_runtime()?;
+  find_python_with_pyicloud().map_err(|_| {
+    "Python/pyicloud nach automatischem Setup nicht verfügbar. Log: %LOCALAPPDATA%\\live-life\\reminders-setup.log"
+      .into()
+  })
 }
 
 fn run_python(
