@@ -1,0 +1,532 @@
+export const en = {
+  common: {
+    coins: 'Coins',
+    save: 'Save',
+    cancel: 'Cancel',
+    delete: 'Delete',
+    close: 'Close',
+    later: 'Later',
+    add: 'Add',
+    edit: 'Edit',
+    sync: 'Sync',
+    active: 'Active',
+    autoSync: 'Auto-Sync',
+    all: 'All',
+    none: 'None',
+    beta: 'Beta',
+    today: 'Today',
+    title: 'Title',
+    description: 'Description',
+    icon: 'Icon',
+    color: 'Color',
+    optional: 'Optional',
+    preview: 'Preview',
+    selectPlaceholder: '— select —',
+    noneOption: '— none —',
+    syncFailed: 'Sync failed',
+    saveFailed: 'Save failed',
+    connectionFailed: 'Connection failed',
+    action: 'Action',
+    details: 'Details',
+    showDetails: 'Show details',
+    recurring: 'Recurring',
+    off: 'Off',
+    on: 'On',
+  },
+
+  brand: {
+    name: 'Live Life',
+    tagline: 'Level up your day!',
+  },
+
+  nav: {
+    calendar: 'Calendar',
+    challenges: 'Challenges',
+    bucketlist: 'Bucketlist',
+    shop: 'Shop',
+    wallet: '{{balance}} Coins',
+    settings: 'Settings',
+    settingsAria: 'Open settings',
+    themeToggle: 'Toggle theme',
+  },
+
+  labels: {
+    categories: {
+      health: 'Health',
+      habit: 'Habit',
+      sport: 'Sport',
+      todo: 'To-Do',
+      other: 'Other',
+    },
+    recurrence: {
+      none: 'One-time',
+      irregular: 'Irregular',
+      daily: 'Daily',
+      weekly: 'Weekly',
+      monthly: 'Monthly',
+    },
+    weekdays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+    monthWeekdays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+  },
+
+  help: {
+    calendar:
+      'Events from CalDAV calendars (read-only) and your manual entries. Challenges appear here as checkable chips.',
+    calendarSync:
+      'CalDAV imports events from iCloud, Google, etc. Changes in Live Life are not written back.',
+    challenges:
+      'Recurring or one-time tasks with coin rewards. Streaks increase the multiplier every 5 days.',
+    challengeSuggestions:
+      'Open Apple reminders from enabled lists. Accepted or dismissed suggestions disappear here.',
+    challengeICloud:
+      'One-time challenges can be created as iCloud reminders. Checking off syncs both ways.',
+    bucketlist:
+      'Long-term wishes and goals without coin mechanics – optionally sorted by target year.',
+    shop: 'Reward yourself with collected coins. Items can include links to websites.',
+    wallet:
+      'Overview of all coin transactions – earned through challenges, spent in the shop.',
+    settings:
+      'Connect calendars and Apple Reminders. Credentials stay local on your computer.',
+    calDav:
+      'Standard calendar protocol for events. After connecting, choose which calendars to import.',
+    appleReminders:
+      'Native Apple reminders via iCloud (beta, desktop only). Separate from CalDAV reminder calendars.',
+    appleRemindersLists:
+      'Only enabled lists are synced. Suggestions and calendar import use this data.',
+    autoSync:
+      'On app start and in the background, enabled accounts sync automatically.',
+    devLog:
+      'Technical log for sync and actions. Click to expand – helpful when troubleshooting.',
+    coins:
+      'You earn coins by completing challenges. Streak bonus: +0.5× every 5 days (max. ×5).',
+  },
+
+  calendar: {
+    title: 'Calendar',
+    subtitle: 'Events & challenges at a glance',
+    viewDay: 'Day',
+    viewWeek: 'Week',
+    viewMonth: 'Month',
+    addEvent: 'Event',
+    todayLabel: 'Today',
+    emptyDay: 'No entries',
+    emptyWeek: '—',
+    todayChallenges: 'Challenges today',
+    todayProgress: '{{done}}/{{total}} done',
+    scheduledRewards: 'Scheduled rewards',
+    rewardsEnough: 'You have enough coins ({{balance}}) for all {{count}} open rewards.',
+    rewardsShort:
+      '{{shortfall}} more coins until all {{count}} rewards ({{total}} coins total).',
+    rewardClaimed: 'Redeemed',
+    rewardReady: '{{price}} · ready',
+    rewardNeedMore: '{{shortfall}} more coins',
+    eventModal: {
+      syncedTitle: 'Synced event',
+      editTitle: 'Edit event',
+      newTitle: 'New event',
+      readOnlyHint:
+        'This event comes from an external calendar and can only be viewed here.',
+      titlePlaceholder: 'Meeting, doctor, …',
+      descriptionPlaceholder: 'Optional',
+      date: 'Date',
+      from: 'From',
+      to: 'To',
+      reminderHint:
+        'Apple reminder – accept as a challenge suggestion and assign coins.',
+    },
+    challengeAssign: {
+      title: 'Assign challenge',
+      recurring: 'Recurring event',
+      hint: 'Link this event to a challenge you have not completed on this day yet.',
+      recurringHint: ' For series, the entire recurrence is linked.',
+      doneOnDay: ' · already completed on this day',
+      tapToComplete: ' · tap in calendar to check off',
+      remove: 'Remove',
+      existing: 'Existing challenge',
+      assign: 'Assign',
+      noOpen: 'No open challenges for this day – create a new one.',
+      createNew: 'Create new challenge',
+      category: 'Category',
+      recurrence: 'Recurrence',
+      createAssign: 'Create & assign',
+    },
+    shopAssign: {
+      title: 'Assign shop reward',
+      recurring: 'Recurring event – the entire series will be linked.',
+      hint: 'When checked off, the reward is redeemed automatically with coins. Items can be assigned to multiple events.',
+      priceCoins: ' · {{price}} coins',
+      alreadyClaimed: ' · already redeemed',
+      needMore: ' · {{shortfall}} more coins needed',
+      tapToRedeem: ' · tap in calendar to redeem',
+      remove: 'Remove',
+      existing: 'Existing reward',
+      assign: 'Assign',
+      createNew: 'Create new reward',
+      descriptionOptional: 'Description (optional)',
+      priceLabel: 'Price in coins',
+      createAssign: 'Create & assign',
+    },
+  },
+
+  challenges: {
+    title: 'Challenges',
+    subtitle: 'Complete tasks and collect coins',
+    add: 'Challenge',
+    tabActive: 'Active challenges',
+    tabCompleted: 'Completed challenges',
+    emptyCompleted: 'No completed one-time challenges yet.',
+    emptyActive: 'No active challenges yet – get started!',
+    coinsReward: '+{{amount}} coins',
+    coinsEarned: '+{{amount}} coins earned',
+    doneOn: 'Completed on {{date}}',
+    streak: 'Streak: {{count}}',
+    timesDone: 'Completed {{count}}×',
+    reset: 'Reset',
+    completeToday: 'Today ✓',
+    modal: {
+      editTitle: 'Edit challenge',
+      newTitle: 'New challenge',
+      titlePlaceholder: 'Quit smoking, workout, skincare…',
+      category: 'Category',
+      coinsPerCompletion: 'Coins per completion',
+      recurrence: 'Recurrence',
+      date: 'Date',
+      start: 'Start',
+      endOptional: 'End (optional)',
+      streakTarget: 'Streak goal (days)',
+      streakPlaceholder: 'e.g. 30',
+      timeFrom: 'Start time (optional)',
+      timeTo: 'End time (optional)',
+      appleReminder: 'Apple reminder (optional)',
+      irregularHint:
+        'Irregular: check off anytime, as often as you like – independent of date.',
+      icloudOnceOnly: 'iCloud reminders are only available for one-time challenges.',
+      icloudNoEndTime:
+        'Apple Reminders does not support end times – only start date and optional start time.',
+      icloudDelay:
+        'New iCloud reminders may take a few minutes to appear in the Apple Reminders app.',
+      icloudDeleteLinked:
+        'Deleting the challenge also deletes the linked iCloud reminder.',
+      noListsCache:
+        'No lists in cache – please sync Apple Reminders in settings.',
+      needAppleAccount:
+        'For iCloud reminders, first add an Apple Reminders account in settings.',
+      icloudLinked: 'Linked to iCloud reminder – checking off syncs both ways.',
+      streakBonus:
+        'Streak bonus: every 5-day streak +0.5× coins (max. ×5). At 50 coins and a 5-day streak: 75 coins.',
+    },
+    suggestions: {
+      title: 'Suggestions from reminders',
+      openCount: '{{shown}} of {{total}} open',
+      dismiss: 'Dismiss',
+      accept: 'Accept',
+      acceptModalTitle: 'Accept reminder as challenge',
+      acceptHint:
+        'Suggestion from Apple reminders – set coins, recurrence, and details.',
+      seriesLinked: ' The entire series will be linked.',
+      startDate: 'Start date',
+      timeOptional: 'Time (optional)',
+      dueOn: 'Due on {{date}}',
+      takenFromReminder: ' – taken from the reminder.',
+      icloudSyncHint:
+        'Date and time sync automatically when changed in iCloud.',
+      fromReminder: 'From reminder: {{recurrence}}',
+      createChallenge: 'Create challenge',
+    },
+  },
+
+  shop: {
+    title: 'Shop',
+    subtitle: 'Treat yourself with collected coins',
+    balanceAvailable: '{{balance}} coins available',
+    addItem: 'Item',
+    empty: 'Shop is empty – add rewards!',
+    priceCoins: '{{price}} coins',
+    openLink: 'Open link',
+    buy: 'Buy',
+    purchased: '"{{title}}" purchased! 🎉',
+    notEnoughCoins: 'Not enough coins!',
+    modal: {
+      editTitle: 'Edit item',
+      newTitle: 'New shop item',
+      titlePlaceholder: 'Cinema, snack, game night…',
+      linkOptional: 'Link (optional)',
+      linkPlaceholder: 'https://…',
+      linkHint: 'Optional web link – e.g. shop, streaming, or ticket site.',
+      priceLabel: 'Price (coins)',
+    },
+  },
+
+  wallet: {
+    title: 'Coin wallet',
+    subtitle: 'Your progress at a glance',
+    currentBalance: 'Current balance',
+    earned: 'Earned',
+    spent: 'Spent',
+    purchases: 'Purchases',
+    transactions: 'Transactions',
+    noTransactions: 'No activity yet',
+    purchasesSection: 'Purchases',
+    noPurchases: 'No purchases yet',
+    txChallenge: 'Challenge: {{title}}',
+    txChallengeICloud: 'Challenge (iCloud): {{title}}',
+    txChallengeUnknown: 'Challenge: Unknown',
+    txShop: 'Shop: {{title}}',
+    txReward: 'Reward: {{title}}',
+  },
+
+  bucketlist: {
+    title: 'Bucketlist',
+    subtitle: 'Dreams and goals – independent of calendar and iCloud',
+    add: 'Entry',
+    filterAll: 'All',
+    unknownTime: 'Unknown time',
+    empty: 'No bucket list entries yet – get started!',
+    doneOn: 'Done {{date}}',
+    open: 'Open',
+    done: 'Done',
+    modal: {
+      editTitle: 'Edit entry',
+      newTitle: 'New bucket list entry',
+      titlePlaceholder: 'Trip, project, experience…',
+      period: 'Time frame',
+      specificYear: 'Specific year',
+      year: 'Year',
+    },
+  },
+
+  settings: {
+    title: 'Settings',
+    subtitle: 'Connect CalDAV calendars and Apple Reminders (beta)',
+    addAccount: 'Add account',
+    intro: {
+      title: 'Quick guide',
+      desc: 'Live Life syncs events and reminders from external sources. Your challenges, coins, and shop items stay local – only sync uses your credentials on this computer.',
+      caldav:
+        'CalDAV imports events (Google, iCloud Calendar, Nextcloud …). Events are read-only in the calendar.',
+      appleReminders:
+        'Apple Reminders (beta) are real iCloud reminders – separate from CalDAV. Apple ID, password, and two-factor code if required.',
+      suggestions:
+        'Under Challenges → Suggestions, open reminders from enabled lists appear. Already accepted ones do not show again.',
+      autoSync:
+        'Auto-sync on start and in the background – details in the Developer Log during loading (expandable).',
+    },
+    desktopOnly:
+      'Calendar sync only works in the desktop app (npm run dev:win), not in the browser.',
+    caldav: {
+      title: 'CalDAV accounts',
+      desc: 'Events are imported (read-only in calendar). After connecting, choose calendars per account. Credentials are stored locally only.',
+      empty: 'No calendar connected yet',
+      remindersSuffix: ' · reminders',
+      lastSync: 'Last: {{datetime}}',
+      neverSynced: 'Never synced',
+      syncAll: 'Sync all',
+      editAccountTitle: 'Edit account',
+    },
+    guide: {
+      title: 'Guide',
+      icloudPassword:
+        'CalDAV / iCloud: App-specific password at appleid.apple.com → Sign-In & Security.',
+      google:
+        'Google CalDAV: Enable 2FA and create an app password in Google account settings.',
+      setup:
+        'CalDAV: Add account → test connection → choose calendars & import type → save & sync.',
+      appleReminders:
+        'Apple Reminders (beta): Separate account with Apple ID + password + 2FA if needed. Notes are imported; reminders without a due date appear without a date.',
+    },
+    language: {
+      title: 'Language',
+      desc: 'App interface language. Your data and sync accounts stay unchanged.',
+    },
+    appearance: {
+      title: 'Appearance',
+      desc: 'Light or dark color scheme for the app.',
+      light: 'Light',
+      dark: 'Dark',
+    },
+    developerMode: {
+      title: 'Developer mode',
+      desc: 'Shows the developer log during loading animations and here in settings.',
+      enabled: 'Show developer log',
+    },
+    sync: {
+      okFull: 'Sync OK: {{imported}} new, {{updated}} updated, {{removed}} removed',
+      okSkipped: 'Sync OK: {{imported}} new, {{updated}} updated. Skipped: {{skipped}}',
+      allCalendars: 'All calendars synced.',
+      allApple: 'All Apple Reminders accounts synced.',
+    },
+    caldavModal: {
+      editTitle: 'Edit CalDAV account',
+      addTitle: 'Add CalDAV account',
+      provider: 'Provider',
+      displayName: 'Display name',
+      displayNamePlaceholder: 'e.g. My iCloud',
+      serverUrl: 'Server URL',
+      serverUrlPlaceholder: 'https://caldav.icloud.com/',
+      password: 'Password / app password',
+      passwordUnchanged: 'Leave blank to keep unchanged',
+      testConnection: 'Test connection & load calendars',
+      pickCalendars: 'Import calendars',
+      pickHint:
+        '{{selected}} of {{total}} calendars selected. "To-Do" calendars are often regular events – choose import type per row.',
+      mayContainReminders: ' · may contain reminders',
+      importType: 'Import type',
+      importEvents: 'Events',
+      importReminders: 'Reminders',
+      accountActive: 'Account active',
+      syncOnStart: 'Sync on app start',
+      saveAndSync: 'Save & sync',
+      needCredentials: 'Please enter username and password.',
+      loadingProbe:
+        'Loading calendars and checking content – may take a while with iCloud…',
+      noCalendars: 'No calendars found. Check your app-specific password.',
+      foundCalendars:
+        '{{total}} calendars found – {{reminderCount}} with reminder content ({{names}}). Adjust import type per row.',
+      needFields: 'Please fill all required fields and select at least one calendar.',
+    },
+  },
+
+  appleReminders: {
+    title: 'Apple Reminders',
+    desc: 'Real reminders from the Apple Reminders app via iCloud – separate from CalDAV reminder calendars – using the unofficial iCloud web API pyicloud. Apple ID, password, and two-factor code if required.',
+    delayHint:
+      'Newly created challenges linked to an iCloud list may take a few minutes to appear in Reminders.',
+    unofficialApi: 'Unofficial iCloud web API.',
+    addAccount: 'Add account',
+    empty: 'No Apple Reminders account connected yet',
+    syncAll: 'Sync all',
+    editAccountTitle: 'Edit account',
+    modal: {
+      editTitle: 'Edit Apple Reminders',
+      connectTitle: 'Connect Apple Reminders (beta)',
+      intro:
+        'Connect your iCloud account directly to the Reminders app. On Windows there is no native EventKit integration – this beta uses Python/pyicloud (unofficial iCloud web API).',
+      security:
+        'Security: Apple ID and password are stored locally and only passed to a Python script on your PC. No upload to our servers. Unofficial API – Apple may change it anytime. CalDAV only needs an app password; here you need your real iCloud password + 2FA.',
+      displayName: 'Display name',
+      displayNamePlaceholder: 'e.g. My reminders',
+      appleId: 'Apple ID (email)',
+      appleIdPlaceholder: 'name@icloud.com',
+      password: 'iCloud password',
+      passwordUnchanged: 'Leave blank to keep unchanged',
+      twoFactor: 'Two-factor code',
+      twoFactorPlaceholder: '6-digit code from your Apple device',
+      step2Hint:
+        'Step 2: Enter the code and click 2. Confirm code – do not click Sign in again (or a new code will be sent).',
+      step3Hint: 'Step 3: Load lists, then select the lists you want.',
+      stepLogin: '1. Sign in',
+      stepConfirm: '2. Confirm code',
+      stepLists: '3. Load lists',
+      pickLists: 'Import reminder lists',
+      accountActive: 'Account active',
+      syncOnStart: 'Sync on app start',
+      saveAndSync: 'Save & sync',
+      needCredentials: 'Enter Apple ID and password.',
+      needCode: 'Please enter the 6-digit code.',
+      finishEarlier: 'Complete step 1 (and step 2 if needed) first.',
+      listsFound: '{{count}} lists found.',
+      needNameAndId: 'Display name and Apple ID are required.',
+      needPassword: 'Enter password.',
+      finishStep3: 'Complete step 3 first: load lists.',
+      needList: 'Select at least one list.',
+      loginFailed: 'Sign-in failed.',
+      codeFailed: 'Could not confirm code.',
+      listsFailed: 'Could not load lists.',
+      twoFactorRequired: 'Two-factor code required.',
+    },
+  },
+
+  syncAuth: {
+    title: 'Sync needs your attention',
+    hint: 'At least one account could not sync. Please check sign-in or confirm your two-factor code.',
+    kindApple: 'Apple Reminders',
+    kindCaldav: 'CalDAV',
+    twoFactor: 'Two-factor code',
+    twoFactorPlaceholder: '6-digit code',
+    confirmAndSync: 'Confirm code & sync',
+    retry: 'Sync again',
+    openSettings: 'Open in settings',
+    needCode: 'Please enter two-factor code.',
+    confirmFailed: 'Confirmation failed',
+    backgroundActive: 'Sync running in background…',
+    backgroundExtended: 'Sync is taking longer and continues in the background…',
+  },
+
+  loading: {
+    challengeReset: 'Resetting challenge…',
+    challengeComplete: 'Checking off challenge…',
+    challengeReopen: 'Reopening challenge…',
+    challengeDelete: 'Deleting challenge…',
+    challengeSave: 'Saving challenge…',
+    challengeAssign: 'Assigning challenge…',
+    challengeCreate: 'Creating challenge…',
+    reminderAccept: 'Accepting reminder…',
+    rewardAssign: 'Assigning reward…',
+    rewardCreate: 'Creating reward…',
+    rewardRedeem: 'Redeeming reward…',
+    rewardUndo: 'Undoing redemption…',
+    calendarSync: 'Syncing calendar…',
+    allCalendarsSync: 'Syncing all calendars…',
+    calendarsLoad: 'Loading calendars…',
+    accountSave: 'Saving account…',
+    remindersSync: 'Syncing reminders…',
+    allRemindersSync: 'Syncing all reminders…',
+    icloudConnect: 'Connecting to iCloud…',
+    twoFactorConfirm: 'Confirming two-factor code…',
+    listsLoad: 'Loading reminder lists…',
+    authConfirm: 'Confirming sign-in…',
+    syncRunning: 'Syncing…',
+  },
+
+  boot: {
+    starting: 'Starting Live Life…',
+    syncing: 'Syncing calendars and reminders…',
+  },
+
+  modal: {
+    closeAria: 'Close',
+  },
+
+  devLog: {
+    title: 'Developer Log',
+    empty: 'No log entries…',
+  },
+
+  caldav: {
+    presets: {
+      icloud: {
+        label: 'iCloud',
+        usernameLabel: 'Apple ID (email)',
+        hint: 'Use your Apple ID as username and an app-specific password (appleid.apple.com → Sign-In & Security).',
+      },
+      google: {
+        label: 'Google Calendar',
+        usernameLabel: 'Google email',
+        hint: 'Google account with app-specific password (Google Account → Security → 2FA → App passwords).',
+      },
+      outlook: {
+        label: 'Outlook / Microsoft 365',
+        usernameLabel: 'Microsoft email',
+        hint: 'CalDAV for Outlook accounts. App-specific password or CalDAV URL from account settings if needed.',
+      },
+      custom: {
+        label: 'Other CalDAV server',
+        usernameLabel: 'Username',
+        hint: 'CalDAV URL from your provider (e.g. Nextcloud, Fastmail, SOGo).',
+      },
+    },
+  },
+
+  accountSummary: {
+    caldav: {
+      noCalendars: 'No active calendars',
+      eventsCount: '{{count}} calendars',
+      remindersCount: '{{count}} reminders',
+      defaultName: 'Calendar',
+    },
+    appleReminders: {
+      noLists: 'No active lists',
+      listsCount: '{{count}} lists',
+    },
+  },
+} as const;
