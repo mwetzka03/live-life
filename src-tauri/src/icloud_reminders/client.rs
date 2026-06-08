@@ -234,8 +234,11 @@ pub struct AppleRemindersListFetchDto {
 
 fn run_bridge(command: &str, config: &AppleRemindersConfigDto) -> Result<BridgeResponse, String> {
   let script = bridge_script_path();
-  if !script.exists() {
-    return Err(format!("Bridge-Skript nicht gefunden: {}", script.display()));
+  if !script.is_file() {
+    return Err(format!(
+      "Bridge-Skript nicht gefunden: {}. Bitte App neu installieren (Release mit gebündelten Skripten).",
+      script.display()
+    ));
   }
 
   let cookie = cookie_dir(&config.apple_id)?;

@@ -4,10 +4,11 @@ mod caldav;
 mod icloud_reminders;
 mod models;
 
-use icloud_reminders::{AppleRemindersConfigDto, AppleRemindersListDto, AppleRemindersListFetchDto};
+use icloud_reminders::{AppleRemindersConfigDto, AppleRemindersListDto, AppleRemindersListFetchDto, init_scripts_dir};
 use models::{CalDavCalendarDto, CalDavConfigDto, SyncedEventDto};
 use tauri::Manager;
 use tauri::image::Image;
+use tauri::path::BaseDirectory;
 
 #[tauri::command]
 fn caldav_discover_calendars(config: CalDavConfigDto) -> Result<Vec<CalDavCalendarDto>, String> {
@@ -97,6 +98,20 @@ fn apple_reminders_ensure_runtime() -> Result<String, String> {
 fn main() {
   tauri::Builder::default()
     .setup(|app| {
+      if let Ok(script) = app
+        .path()
+        .resolve("scripts/apple_reminders_bridge.py", BaseDirectory::Resource)
+      {
+        if let Some(parent) = script.parent() {
+          init_scripts_dir(parent.to_path_buf());
+        }
+      } else if let Ok(resource_dir) = app.path().resource_dir() {
+        let scripts = resource_dir.join("scripts");
+        if scripts.join("apple_reminders_bridge.py").is_file() {
+          init_scripts_dir(scripts);
+        }
+      }
+
       let icon = Image::from_bytes(include_bytes!("../icons/128x128@2x.png"))
         .expect("App-Icon konnte nicht geladen werden");
       if let Some(window) = app.get_webview_window("main") {

@@ -1,35 +1,64 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::sync::Mutex;
+use std::sync::{Mutex, OnceLock};
 
+static SCRIPTS_DIR: OnceLock<PathBuf> = OnceLock::new();
 static SETUP_ONCE: Mutex<Option<bool>> = Mutex::new(None);
 
-pub fn scripts_dir() -> PathBuf {
-  if let Some(dir) = bundled_scripts_dir() {
-    return dir;
+pub fn init_scripts_dir(dir: PathBuf) {
+  if dir.join("apple_reminders_bridge.py").is_file() {
+    let _ = SCRIPTS_DIR.set(dir);
   }
-  PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../scripts")
 }
 
-fn bundled_scripts_dir() -> Option<PathBuf> {
+fn has_bridge(dir: &Path) -> bool {
+  dir.join("apple_reminders_bridge.py").is_file()
+}
+
+fn discover_scripts_dir() -> Option<PathBuf> {
   let exe = std::env::current_exe().ok()?;
-  let parent = exe.parent()?;
-  for candidate in [
-    parent.join("resources/scripts"),
-    parent.join("_up_/resources/scripts"),
-    parent.join("resources"),
-    parent.join("scripts"),
-  ] {
-    if candidate.join("apple_reminders_bridge.py").exists() {
-      return Some(candidate);
+  let mut dir = exe.parent()?.to_path_buf();
+
+  for _ in 0..8 {
+    for candidate in [
+      dir.join("resources").join("scripts"),
+      dir.join("resources"),
+      dir.join("scripts"),
+    ] {
+      if has_bridge(&candidate) {
+        return Some(candidate);
+      }
+    }
+    if !dir.pop() {
+      break;
     }
   }
+
   None
 }
 
+pub fn scripts_dir() -> PathBuf {
+  if let Some(dir) = SCRIPTS_DIR.get() {
+    return dir.clone();
+  }
+  if let Some(dir) = discover_scripts_dir() {
+    let _ = SCRIPTS_DIR.set(dir.clone());
+    return dir;
+  }
+
+  #[cfg(debug_assertions)]
+  {
+    return PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../scripts");
+  }
+
+  #[cfg(not(debug_assertions))]
+  {
+    PathBuf::from("scripts")
+  }
+}
+
 pub fn bridge_script_path() -> PathBuf {
-  let dir = scripts_dir();
-  dir.join("apple_reminders_bridge.py")
+  scripts_dir().join("apple_reminders_bridge.py")
 }
 
 pub fn install_script_path() -> PathBuf {
@@ -102,9 +131,9 @@ pub fn ensure_reminders_runtime() -> Result<String, String> {
   }
 
   let script = install_script_path();
-  if !script.exists() {
+  if !script.is_file() {
     return Err(format!(
-      "Setup-Skript nicht gefunden: {}. Bitte Release-Installer oder Start-LiveLife.cmd nutzen.",
+      "Setup-Skript nicht gefunden: {}. Bitte App neu installieren.",
       script.display()
     ));
   }
