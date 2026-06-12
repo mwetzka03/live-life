@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useLocale } from '../../i18n/LocaleProvider';
 import { useAppState } from '../../hooks/useAppState';
+import { useLoading } from '../../lib/loading/LoadingProvider';
 import { AppIcon, ColorPicker, IconPicker } from '../common/AppIcon';
 import { Modal } from '../common/Modal';
+import { parseCalendarSyncSourceId } from '../../lib/caldavAccount';
 import { EventChallengeAssign } from './EventChallengeAssign';
 import { EventShopAssign } from './EventShopAssign';
 
@@ -16,6 +18,7 @@ interface EventModalProps {
 
 export function EventModal({ open, eventId, defaultDate, onClose }: EventModalProps) {
   const { app } = useAppState();
+  const { runWithLoading } = useLoading();
   const { t } = useLocale();
   const existing = eventId ? app.calendar.getById(eventId) : undefined;
 
@@ -28,6 +31,12 @@ export function EventModal({ open, eventId, defaultDate, onClose }: EventModalPr
   const [color, setColor] = useState('#3b82f6');
 
   const isReadOnly = existing?.readOnly;
+  const isAppleReminder = existing?.syncKind === 'reminder' && !!existing?.readOnly;
+  const canDelete = !!eventId && !isAppleReminder;
+  const isCalDavSynced =
+    !!existing?.readOnly &&
+    !!existing.syncSourceId &&
+    !!parseCalendarSyncSourceId(existing.syncSourceId);
 
   useEffect(() => {
     if (!open) return;
@@ -58,8 +67,11 @@ export function EventModal({ open, eventId, defaultDate, onClose }: EventModalPr
   };
 
   const remove = () => {
-    if (eventId) app.deleteEvent(eventId);
-    onClose();
+    if (!eventId) return;
+    void runWithLoading(
+      () => app.deleteEvent(eventId),
+      t('loading.eventDelete'),
+    ).then(() => onClose());
   };
 
   const modalTitle = isReadOnly
@@ -114,6 +126,14 @@ export function EventModal({ open, eventId, defaultDate, onClose }: EventModalPr
           </>
         )}
 
+        {isReadOnly && existing?.linkedChallengeId && (
+          <p className="ll-form-hint">{t('calendar.eventModal.challengeCheckoffHint')}</p>
+        )}
+
+        {isReadOnly && existing?.isRecurring && (
+          <p className="ll-form-hint">{t('calendar.eventModal.deleteSeriesInstanceHint')}</p>
+        )}
+
         {eventId && existing?.syncKind === 'reminder' && !existing.linkedChallengeId && (
           <p className="ll-form-hint ll-recurring-badge">{t('calendar.eventModal.reminderHint')}</p>
         )}
@@ -146,9 +166,10 @@ export function EventModal({ open, eventId, defaultDate, onClose }: EventModalPr
         </div>
 
         <div className="ll-form-actions">
-          {eventId && !isReadOnly && (
+          {canDelete && (
             <button type="button" className="ll-btn danger" onClick={remove}>
-              <Trash2 size={16} /> {t('common.delete')}
+              <Trash2 size={16} />{' '}
+              {isCalDavSynced ? t('calendar.eventModal.deleteSynced') : t('common.delete')}
             </button>
           )}
           <div className="ll-form-actions-right">

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { CheckCircle2, Circle, Edit3, ListChecks, Plus, Trash2 } from 'lucide-react';
 import type { BucketlistItem } from '../../domain/models/AppData';
 import { useLocale } from '../../i18n/LocaleProvider';
@@ -6,9 +6,13 @@ import { useAppState } from '../../hooks/useAppState';
 import { AppIcon, ColorPicker, IconPicker } from '../common/AppIcon';
 import { Modal } from '../common/Modal';
 import { PageHeader } from '../common/InfoTip';
+import { FitPager } from '../common/FitPager';
 import { VisionBoardCanvas, VisionBoardSelector } from './VisionBoardCanvas';
 
 const UNKNOWN_YEAR = 'unknown';
+const BUCKETLIST_CARD_GAP_PX = 9;
+const BUCKETLIST_PAGER_HEIGHT_PX = 44;
+const BUCKETLIST_CARD_FALLBACK_PX = 96;
 
 interface BucketlistModalProps {
   open: boolean;
@@ -197,6 +201,36 @@ function BucketlistSidebarCard({ item, onEdit }: { item: BucketlistItem; onEdit:
   );
 }
 
+function useBucketlistPageSize(itemCount: number) {
+  const listRef = useRef<HTMLDivElement>(null);
+  const [pageSize, setPageSize] = useState(3);
+
+  useLayoutEffect(() => {
+    const container = listRef.current;
+    if (!container) return;
+
+    const measure = () => {
+      const height = container.clientHeight;
+      if (height <= 0) return;
+
+      const sample = container.querySelector('.ll-bucketlist-sidebar-card') as HTMLElement | null;
+      const cardHeight =
+        (sample?.offsetHeight ?? BUCKETLIST_CARD_FALLBACK_PX) + BUCKETLIST_CARD_GAP_PX;
+      const probePager = itemCount > 1;
+      const pagerHeight = probePager ? BUCKETLIST_PAGER_HEIGHT_PX : 0;
+      const fit = Math.max(1, Math.floor((height - pagerHeight) / cardHeight));
+      setPageSize((prev) => (prev === fit ? prev : fit));
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, [itemCount]);
+
+  return { listRef, pageSize };
+}
+
 export function VisionboardPanel() {
   const { app } = useAppState();
   const { t } = useLocale();
@@ -204,9 +238,23 @@ export function VisionboardPanel() {
   const board = app.visionBoards.getActive();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [bucketPage, setBucketPage] = useState(0);
+  const { listRef, pageSize } = useBucketlistPageSize(items.length);
+
+  const pageCount = Math.max(1, Math.ceil(items.length / pageSize));
+  const safePage = Math.min(bucketPage, pageCount - 1);
+  const pageItems = items.slice(
+    safePage * pageSize,
+    safePage * pageSize + pageSize,
+  );
+  const showPager = items.length > pageSize;
+
+  useEffect(() => {
+    setBucketPage((page) => Math.min(page, Math.max(0, pageCount - 1)));
+  }, [items.length, pageCount]);
 
   return (
-    <section className="ll-page ll-visionboard-page">
+    <section className="ll-page ll-page-fit ll-visionboard-page">
       <PageHeader
         title={t('visionboard.title')}
         subtitle={t('visionboard.subtitle')}
@@ -228,14 +276,14 @@ export function VisionboardPanel() {
               <Plus size={14} /> {t('bucketlist.add')}
             </button>
           </div>
-          <div className="ll-visionboard-bucketlist-scroll">
+          <div className="ll-visionboard-bucketlist-scroll" ref={listRef}>
             {items.length === 0 && (
               <div className="ll-empty compact">
                 <ListChecks size={24} />
                 <p>{t('bucketlist.empty')}</p>
               </div>
             )}
-            {items.map((item) => (
+            {pageItems.map((item) => (
               <BucketlistSidebarCard
                 key={item.id}
                 item={item}
@@ -246,6 +294,9 @@ export function VisionboardPanel() {
               />
             ))}
           </div>
+          {showPager && (
+            <FitPager className="ll-fit-pager-compact" page={safePage} pageCount={pageCount} onPageChange={setBucketPage} />
+          )}
         </aside>
 
         <div className="ll-visionboard-main">

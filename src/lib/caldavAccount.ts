@@ -4,6 +4,18 @@ export function calendarSyncSourceId(accountId: string, calendarHref: string): s
   return `${accountId}::${calendarHref}`;
 }
 
+export function parseCalendarSyncSourceId(syncSourceId: string): {
+  accountId: string;
+  calendarHref: string;
+} | null {
+  const sep = syncSourceId.indexOf('::');
+  if (sep <= 0) return null;
+  return {
+    accountId: syncSourceId.slice(0, sep),
+    calendarHref: syncSourceId.slice(sep + 2),
+  };
+}
+
 export function getEnabledCalendars(account: { calendars: CalDavLinkedCalendar[] }): CalDavLinkedCalendar[] {
   return account.calendars.filter((c: CalDavLinkedCalendar) => c.enabled);
 }

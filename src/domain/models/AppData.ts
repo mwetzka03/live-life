@@ -49,6 +49,7 @@ export interface CalendarEvent {
   icon: string;
   externalId?: string;
   externalHref?: string;
+  caldavResourceHref?: string;
   syncSourceId?: string;
   readOnly?: boolean;
   linkedChallengeId?: string;

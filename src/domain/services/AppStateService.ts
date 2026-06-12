@@ -1,9 +1,9 @@
 import { EMPTY_APP_DATA, type AppData, type CalDavAccount, type CalendarEvent, type Challenge } from '../models/AppData';
-import { normalizeCalDavAccount, wasMisclassifiedAsReminders, getEnabledCalendars } from '../../lib/caldavAccount';
+import { normalizeCalDavAccount, parseCalendarSyncSourceId, wasMisclassifiedAsReminders, getEnabledCalendars } from '../../lib/caldavAccount';
 import { parseAppleRemindersSourceId, getEnabledAppleRemindersLists } from '../../lib/appleRemindersAccount';
 import { mergeAppleReminderLists } from '../../lib/appleReminderListOptions';
 import { AppleRemindersApi } from './AppleRemindersApi';
-import { isTauriApp } from './CalDavApi';
+import { CalDavApi, isTauriApp } from './CalDavApi';
 import { devLog } from '../../lib/startupDevLog';
 import { LocalStorageRepository } from '../repositories/LocalStorageRepository';
 import { CalendarService } from './CalendarService';
@@ -57,6 +57,8 @@ export class AppStateService {
   private repository: LocalStorageRepository;
   private listeners: Set<Listener> = new Set();
   private cachedSnapshot: AppData | null = null;
+  private saveFrame: number | null = null;
+  private notifyFrame: number | null = null;
   private suppressICloudPush = false;
 
   readonly calendar: CalendarService;
@@ -350,18 +352,58 @@ export class AppStateService {
     this.data.eventRewardClaims = this.eventRewards.getAll();
     this.data.shopItems = this.shop.getItems();
     this.data.purchases = this.shop.getPurchases();
+    this.data.transactions = this.coins.getTransactions();
     this.data.bucketlistItems = this.bucketlist.getAll();
     this.data.visionBoards = this.visionBoards.getAll();
     this.data.activeVisionBoardId = this.visionBoards.getActiveId();
     this.data.calDavAccounts = this.calDavAccounts.getAll();
     this.data.appleRemindersAccounts = this.appleRemindersAccounts.getAll();
-    this.repository.save(this.data);
     this.notify();
+    this.scheduleSave();
+  }
+
+  /** Lightweight persist for challenge completion toggles (avoids copying large vision-board payloads). */
+  private persistChallengeState(): void {
+    this.data.challenges = this.challenges.getAll();
+    this.data.completions = this.challenges.getCompletions();
+    this.data.transactions = this.coins.getTransactions();
+    this.notify();
+    this.scheduleSave();
+  }
+
+  private scheduleSave(): void {
+    const run = () => {
+      this.saveFrame = null;
+      try {
+        this.repository.save(this.data);
+      } catch {
+        // localStorage quota – UI state remains in memory
+      }
+    };
+
+    if (typeof window === 'undefined') {
+      run();
+      return;
+    }
+
+    if (this.saveFrame !== null) {
+      window.clearTimeout(this.saveFrame);
+    }
+
+    this.saveFrame = window.setTimeout(run, 120);
   }
 
   private notify(): void {
     this.cachedSnapshot = null;
-    this.listeners.forEach((l) => l());
+    if (typeof window === 'undefined') {
+      this.listeners.forEach((l) => l());
+      return;
+    }
+    if (this.notifyFrame !== null) return;
+    this.notifyFrame = window.requestAnimationFrame(() => {
+      this.notifyFrame = null;
+      this.listeners.forEach((l) => l());
+    });
   }
 
   private buildSnapshot(): AppData {
@@ -407,9 +449,31 @@ export class AppStateService {
     return result;
   }
 
-  deleteEvent(id: string) {
+  async deleteEvent(id: string) {
+    const event = this.calendar.getById(id);
+    const resourceHref = resolveCaldavResourceHref(event);
+    if (
+      event?.readOnly &&
+      event.syncSourceId &&
+      resourceHref &&
+      event.syncKind !== 'reminder' &&
+      parseCalendarSyncSourceId(event.syncSourceId) &&
+      isTauriApp()
+    ) {
+      const parsed = parseCalendarSyncSourceId(event.syncSourceId)!;
+      const account = this.calDavAccounts.getById(parsed.accountId);
+      if (account) {
+        await CalDavApi.deleteEvent(account, parsed.calendarHref, {
+          resourceHref,
+          occurrenceDate: event.date,
+          startTime: event.startTime,
+          isRecurring: event.isRecurring,
+        });
+      }
+    }
+
     this.eventRewards.removeForEvent(id);
-    const result = this.calendar.delete(id);
+    const result = this.calendar.delete(id, { allowSynced: !!event?.readOnly });
     this.persist();
     return result;
   }
@@ -648,7 +712,10 @@ export class AppStateService {
   }
 
   async syncChallengeReminderInICloud(challengeId: string, completed: boolean): Promise<void> {
-    this.persistAppleReminderLinkOnChallenge(challengeId);
+    const challenge = this.challenges.getById(challengeId);
+    if (!challenge?.icloudReminderHref) {
+      this.persistAppleReminderLinkOnChallenge(challengeId);
+    }
     const target = this.findAppleReminderTarget(challengeId);
     if (!target) return;
     const account = this.appleRemindersAccounts.getById(target.accountId);
@@ -942,7 +1009,7 @@ export class AppStateService {
   }
 
   async completeChallenge(challengeId: string, date: string) {
-    const completion = this.challenges.complete(challengeId, date);
+    const completion = this.challenges.completeFromSync(challengeId, date);
     if (!completion) return null;
     const challenge = this.challenges.getById(challengeId);
     this.coins.earn(
@@ -950,7 +1017,7 @@ export class AppStateService {
       `Challenge: ${challenge?.title ?? 'Unbekannt'}`,
       completion.id,
     );
-    this.persist();
+    this.persistChallengeState();
 
     if (!this.suppressICloudPush) {
       void this.syncChallengeReminderInICloud(challengeId, true).catch(() => {
@@ -973,7 +1040,7 @@ export class AppStateService {
       `Challenge: ${challenge?.title ?? 'Unbekannt'}`,
       completion.id,
     );
-    this.persist();
+    this.persistChallengeState();
 
     if (!this.suppressICloudPush) {
       void this.syncChallengeReminderInICloud(event.linkedChallengeId, true).catch(() => {
@@ -988,7 +1055,7 @@ export class AppStateService {
     const removed = this.challenges.uncomplete(challengeId, date);
     if (!removed) return null;
     this.coins.removeByReferenceId(removed.id);
-    this.persist();
+    this.persistChallengeState();
 
     if (!this.suppressICloudPush) {
       void this.syncChallengeReminderInICloud(challengeId, false).catch(() => {
@@ -1206,6 +1273,17 @@ export class AppStateService {
       ),
     );
   }
+}
+
+function resolveCaldavResourceHref(event: CalendarEvent | undefined): string | undefined {
+  if (!event) return undefined;
+  if (event.caldavResourceHref?.trim()) return event.caldavResourceHref.trim();
+  const href = event.externalHref?.trim();
+  if (!href) return undefined;
+  if (href.startsWith('/') || href.startsWith('http://') || href.startsWith('https://')) {
+    return href;
+  }
+  return undefined;
 }
 
 let singleton: AppStateService | null = null;

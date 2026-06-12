@@ -1,11 +1,12 @@
 mod client;
+mod delete;
 mod parse;
 mod rrule_expand;
 mod xml;
 
 pub use client::CalDavClient;
 
-use crate::models::{CalDavCalendarDto, CalDavConfigDto, SyncedEventDto};
+use crate::models::{CalDavCalendarDto, CalDavConfigDto, CalDavDeleteEventDto, SyncedEventDto};
 
 pub fn discover_calendars(config: &CalDavConfigDto) -> Result<Vec<CalDavCalendarDto>, String> {
   let client = CalDavClient::new(&config.server_url, &config.username, &config.password)?;
@@ -33,8 +34,8 @@ pub fn fetch_events(
     return Err("Kein Kalender ausgewählt.".into());
   }
   let client = CalDavClient::new(&config.server_url, &config.username, &config.password)?;
-  let ics_blocks = client.fetch_calendar_data(&config.calendar_href, start, end)?;
-  Ok(parse::parse_ics_blocks(&ics_blocks, start, end))
+  let resources = client.fetch_calendar_resources(&config.calendar_href, start, end)?;
+  Ok(parse::parse_ics_resources(&resources, start, end))
 }
 
 pub fn fetch_reminders(
@@ -46,6 +47,22 @@ pub fn fetch_reminders(
     return Err("Kein Kalender ausgewählt.".into());
   }
   let client = CalDavClient::new(&config.server_url, &config.username, &config.password)?;
-  let ics_blocks = client.fetch_reminder_data(&config.calendar_href, start, end)?;
-  Ok(parse::parse_todo_blocks(&ics_blocks, start, end))
+  let resources = client.fetch_reminder_resources(&config.calendar_href, start, end)?;
+  Ok(parse::parse_todo_resources(&resources, start, end))
+}
+
+pub fn delete_event(config: &CalDavConfigDto, request: &CalDavDeleteEventDto) -> Result<(), String> {
+  if config.calendar_href.trim().is_empty() {
+    return Err("Kein Kalender ausgewählt.".into());
+  }
+  if request.resource_href.trim().is_empty() {
+    return Err("Kein Kalender-Eintrag zum Löschen.".into());
+  }
+  let client = CalDavClient::new(&config.server_url, &config.username, &config.password)?;
+  client.delete_calendar_event(
+    &request.resource_href,
+    request.occurrence_date.as_deref(),
+    request.start_time.as_deref(),
+    request.is_recurring,
+  )
 }

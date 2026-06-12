@@ -9,7 +9,56 @@ body,
 #root {
   margin: 0;
   min-height: 100%;
+  height: 100%;
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+html {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--ll-accent) 42%, var(--ll-border)) transparent;
+}
+
+html::-webkit-scrollbar,
+.ll-scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+html::-webkit-scrollbar-track,
+.ll-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+html::-webkit-scrollbar-thumb,
+.ll-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ll-accent) 55%, var(--ll-border)),
+    color-mix(in srgb, var(--ll-shop) 45%, var(--ll-border))
+  );
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+html::-webkit-scrollbar-thumb:hover,
+.ll-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ll-accent) 72%, white),
+    color-mix(in srgb, var(--ll-shop) 62%, white)
+  );
+  background-clip: padding-box;
+}
+
+html::-webkit-scrollbar-corner,
+.ll-scroll::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.ll-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--ll-accent) 42%, var(--ll-border)) transparent;
 }
 
 button,
@@ -20,7 +69,9 @@ textarea {
 }
 
 .ll-app {
+  height: 100vh;
   min-height: 100vh;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   background: var(--ll-bg);
@@ -157,16 +208,86 @@ textarea {
 
 .ll-main {
   flex: 1;
+  min-height: 0;
   padding: clamp(1rem, 3vw, 1.75rem);
   max-width: 1400px;
   width: 100%;
   margin: 0 auto;
+  overflow: auto;
 }
 
-.ll-main.ll-main-full {
+.ll-main.ll-main-fit {
   max-width: none;
   margin: 0;
-  padding: 0.75rem clamp(0.85rem, 2vw, 1.5rem) 0.85rem;
+  padding: clamp(0.65rem, 1.5vw, 1rem) clamp(0.85rem, 2vw, 1.5rem) clamp(0.75rem, 1.5vw, 1rem);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.ll-main-fit > .ll-page-fit {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+}
+
+.ll-page-fit {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ll-page-fit-header,
+.ll-page-fit-toolbar {
+  flex-shrink: 0;
+}
+
+.ll-page-fit-header .ll-page-header {
+  margin-bottom: clamp(0.55rem, 1.2vw, 0.85rem);
+}
+
+.ll-page-fit-toolbar {
+  margin-bottom: clamp(0.45rem, 1vw, 0.75rem);
+}
+
+.ll-page-fit-panels {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.45rem, 1vw, 0.75rem);
+}
+
+.ll-page-fit-panels .ll-scheduled-rewards-panel,
+.ll-page-fit-panels .ll-completed-challenges-panel {
+  margin-bottom: 0;
+}
+
+.ll-page-fit-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.ll-fit-pager {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  padding: 0.45rem 0 0.15rem;
+  font-size: 0.82rem;
+  color: var(--ll-text-muted);
+  font-weight: 600;
+}
+
+.ll-card-grid-fit {
+  flex: 1;
+  min-height: 0;
+  align-content: start;
+  overflow: hidden;
 }
 
 .ll-background-sync-bar {
@@ -320,7 +441,31 @@ textarea {
   border: 1px solid var(--ll-border);
   border-radius: 20px;
   padding: clamp(0.75rem, 2vw, 1.25rem);
-  min-height: clamp(420px, 60vh, 720px);
+  min-height: clamp(280px, 40vh, 720px);
+}
+
+.ll-calendar-page .ll-calendar {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ll-calendar-page .ll-calendar-grid {
+  flex: 1;
+  min-height: 0;
+}
+
+.ll-calendar-page .ll-grid-week {
+  min-height: 0;
+  height: 100%;
+}
+
+.ll-calendar-page .ll-day-cell.week-column {
+  min-height: 0;
+  height: 100%;
+  max-height: none;
 }
 
 .ll-calendar-week {
@@ -451,7 +596,43 @@ textarea {
 }
 
 .ll-challenge-tabs {
-  margin-bottom: 1rem;
+  margin-bottom: 0;
+}
+
+.ll-page-fit-toolbar .ll-challenge-tabs {
+  margin-top: 0.35rem;
+}
+
+.ll-page-fit-toolbar .ll-reminder-suggestions {
+  margin-bottom: 0;
+}
+
+.ll-panel-list-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ll-fit-pager-compact {
+  padding-top: 0.35rem;
+}
+
+.ll-card.shop-card {
+  align-items: stretch;
+}
+
+.ll-card.shop-card .ll-card-actions.column {
+  justify-content: flex-start;
+}
+
+.ll-inline-actions {
+  display: flex;
+  gap: 0.35rem;
+  justify-content: center;
+}
+
+.ll-main.ll-scroll-page {
+  overflow: auto;
 }
 
 .ll-challenge-tabs .ll-segment button {
@@ -493,11 +674,12 @@ textarea {
   border: 1px solid var(--ll-border);
   border-radius: 18px;
   border-top: 4px solid var(--ll-accent);
-  padding: 1rem;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 0.85rem;
-  align-items: start;
+  padding: clamp(0.75rem, 1.5vw, 1rem);
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(0.65rem, 1.2vw, 0.85rem);
+  min-width: 0;
+  overflow: hidden;
 }
 
 .ll-card-icon {
@@ -506,10 +688,45 @@ textarea {
   border-radius: 14px;
   display: grid;
   place-items: center;
+  flex: 0 0 48px;
+}
+
+.ll-card-body {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .ll-card-body h3 {
   margin: 0 0 0.35rem;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.ll-card-actions {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 0.35rem;
+  align-items: center;
+  flex: 0 0 auto;
+  align-self: flex-start;
+}
+
+.ll-card-actions.column {
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 7.25rem;
+  max-width: 100%;
+}
+
+.ll-card-actions.column .ll-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.ll-group-card .ll-card-actions {
+  position: sticky;
+  top: 0;
 }
 
 .ll-card-body p {
@@ -541,18 +758,6 @@ textarea {
   background: var(--ll-coin-soft);
   color: var(--ll-coin);
   font-weight: 700;
-}
-
-.ll-card-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  align-items: center;
-}
-
-.ll-card-actions.column {
-  align-items: stretch;
-  gap: 0.75rem;
 }
 
 .ll-inline-actions {
@@ -603,6 +808,53 @@ textarea {
   margin-top: 0.5rem;
   color: var(--ll-coin);
   font-weight: 800;
+}
+
+.ll-wallet-page .ll-wallet-stats {
+  margin-bottom: clamp(0.55rem, 1vw, 0.85rem);
+}
+
+.ll-wallet-page .ll-stat-card {
+  padding: clamp(0.65rem, 1.2vw, 1rem);
+}
+
+.ll-wallet-page .ll-stat-card strong {
+  font-size: clamp(1.1rem, 2.2vw, 1.55rem);
+}
+
+.ll-wallet-page .ll-wallet-grid {
+  flex: 1;
+  min-height: 0;
+  align-items: stretch;
+}
+
+.ll-wallet-page .ll-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ll-wallet-page .ll-tx-list {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  overflow: hidden;
+}
+
+.ll-shop-page .ll-shop-section {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ll-shop-page .ll-shop-section .ll-card-grid {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  align-content: start;
 }
 
 .ll-wallet-stats {
@@ -1144,6 +1396,7 @@ textarea {
   gap: 0.5rem;
   flex: 1;
   overflow: auto;
+  min-height: 0;
 }
 
 .ll-schedule-timed,
@@ -1990,13 +2243,17 @@ textarea {
 }
 
 @media (max-width: 900px) {
-  .ll-card {
-    grid-template-columns: 1fr;
-  }
-
-  .ll-card-actions {
+  .ll-card-actions.column {
     flex-direction: row;
     flex-wrap: wrap;
+    min-width: 0;
+    width: 100%;
+    flex-basis: 100%;
+  }
+
+  .ll-card-actions.column .ll-btn {
+    flex: 1 1 auto;
+    width: auto;
   }
 }
 
@@ -2306,6 +2563,15 @@ textarea {
   align-items: center;
   gap: 0.45rem;
   font-size: 0.88rem;
+  min-width: 0;
+}
+
+.ll-group-challenge-list li > span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ll-group-challenge-list li.done span {
@@ -2349,10 +2615,14 @@ textarea {
 }
 
 .ll-visionboard-page {
-  height: calc(100vh - var(--ll-topbar-height, 72px) - 1.6rem);
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden;
+}
+
+.ll-visionboard-page.ll-page-fit {
+  padding-bottom: 0.15rem;
 }
 
 .ll-visionboard-page .ll-page-header {
@@ -2400,11 +2670,29 @@ textarea {
 
 .ll-visionboard-bucketlist-scroll {
   flex: 1;
-  overflow: auto;
+  min-height: 0;
+  overflow: hidden;
   padding: 0.65rem;
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
+}
+
+.ll-visionboard-bucketlist-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.75rem 0.75rem;
+  border-top: 1px solid var(--ll-border);
+  font-size: 0.82rem;
+  color: var(--ll-text-muted);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.ll-completed-challenges-panel {
+  background: linear-gradient(135deg, color-mix(in srgb, #8b5cf6 12%, var(--ll-bg-card)), var(--ll-bg-card));
 }
 
 .ll-bucketlist-sidebar-card {

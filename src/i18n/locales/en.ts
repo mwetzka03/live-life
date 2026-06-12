@@ -119,6 +119,9 @@ export const en = {
     emptyWeek: '—',
     todayChallenges: 'Challenges today',
     todayProgress: '{{done}}/{{total}} done',
+    completedChallengesToday: 'Completed challenges',
+    completedChallengesSummary: '{{count}} done · {{coins}} coins earned',
+    completedToday: 'Completed today',
     scheduledRewards: 'Scheduled rewards',
     rewardsEnough: 'You have enough coins ({{balance}}) for all {{count}} open rewards.',
     rewardsShort:
@@ -131,7 +134,12 @@ export const en = {
       editTitle: 'Edit event',
       newTitle: 'New event',
       readOnlyHint:
-        'This event comes from an external calendar and can only be viewed here.',
+        'This event comes from an external calendar. You can delete it here; the change syncs to the connected calendar.',
+      deleteSeriesInstanceHint:
+        'For recurring events, only this single occurrence is deleted—the rest of the series stays.',
+      deleteSynced: 'Delete from calendar',
+      challengeCheckoffHint:
+        'Checking off in the calendar only marks the challenge—the event stays in your connected calendar. Use “Delete from calendar” here to remove it.',
       titlePlaceholder: 'Meeting, doctor, …',
       descriptionPlaceholder: 'Optional',
       date: 'Date',
@@ -568,6 +576,7 @@ export const en = {
     challengeComplete: 'Checking off challenge…',
     challengeReopen: 'Reopening challenge…',
     challengeDelete: 'Deleting challenge…',
+    eventDelete: 'Deleting event…',
     challengeSave: 'Saving challenge…',
     challengeAssign: 'Assigning challenge…',
     challengeCreate: 'Creating challenge…',

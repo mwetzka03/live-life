@@ -1,32 +1,56 @@
 use crate::models::SyncedEventDto;
 use crate::caldav::rrule_expand::{expand_rrule, parse_iso_date, parse_rrule, RRuleFreq};
+use crate::caldav::xml::CalendarResource;
 use chrono::{Datelike, NaiveDate};
 
-pub fn parse_ics_blocks(blocks: &[String], range_start: &str, range_end: &str) -> Vec<SyncedEventDto> {
+pub fn parse_ics_resources(
+  resources: &[CalendarResource],
+  range_start: &str,
+  range_end: &str,
+) -> Vec<SyncedEventDto> {
   let range_start_date = parse_iso_date(range_start).unwrap_or_else(|| NaiveDate::from_ymd_opt(2000, 1, 1).unwrap());
   let range_end_date = parse_iso_date(range_end).unwrap_or_else(|| NaiveDate::from_ymd_opt(2100, 12, 31).unwrap());
 
   let mut events = Vec::new();
-  for block in blocks {
-    events.extend(parse_ics_block(block, range_start_date, range_end_date));
+  for resource in resources {
+    events.extend(parse_ics_block(
+      &resource.ics,
+      &resource.href,
+      range_start_date,
+      range_end_date,
+    ));
   }
   events.sort_by(|a, b| a.date.cmp(&b.date).then(a.start_time.cmp(&b.start_time)));
   events
 }
 
-pub fn parse_todo_blocks(blocks: &[String], range_start: &str, range_end: &str) -> Vec<SyncedEventDto> {
+pub fn parse_todo_resources(
+  resources: &[CalendarResource],
+  range_start: &str,
+  range_end: &str,
+) -> Vec<SyncedEventDto> {
   let range_start_date = parse_iso_date(range_start).unwrap_or_else(|| NaiveDate::from_ymd_opt(2000, 1, 1).unwrap());
   let range_end_date = parse_iso_date(range_end).unwrap_or_else(|| NaiveDate::from_ymd_opt(2100, 12, 31).unwrap());
 
   let mut todos = Vec::new();
-  for block in blocks {
-    todos.extend(parse_todo_block(block, range_start_date, range_end_date));
+  for resource in resources {
+    todos.extend(parse_todo_block(
+      &resource.ics,
+      &resource.href,
+      range_start_date,
+      range_end_date,
+    ));
   }
   todos.sort_by(|a, b| a.date.cmp(&b.date).then(a.start_time.cmp(&b.start_time)));
   todos
 }
 
-fn parse_todo_block(ics: &str, range_start: NaiveDate, range_end: NaiveDate) -> Vec<SyncedEventDto> {
+fn parse_todo_block(
+  ics: &str,
+  resource_href: &str,
+  range_start: NaiveDate,
+  range_end: NaiveDate,
+) -> Vec<SyncedEventDto> {
   let unfolded = unfold_ics(ics);
   let mut todos = Vec::new();
   let mut in_todo = false;
@@ -40,7 +64,7 @@ fn parse_todo_block(ics: &str, range_start: NaiveDate, range_end: NaiveDate) -> 
       continue;
     }
     if line == "END:VTODO" {
-      todos.extend(current.build_occurrences(range_start, range_end));
+      todos.extend(current.build_occurrences(resource_href, range_start, range_end));
       in_todo = false;
       current = TodoBuilder::default();
       continue;
@@ -102,7 +126,12 @@ impl TodoBuilder {
     }
   }
 
-  fn build_occurrences(&self, range_start: NaiveDate, range_end: NaiveDate) -> Vec<SyncedEventDto> {
+  fn build_occurrences(
+    &self,
+    resource_href: &str,
+    range_start: NaiveDate,
+    range_end: NaiveDate,
+  ) -> Vec<SyncedEventDto> {
     if self.completed {
       return Vec::new();
     }
@@ -163,6 +192,7 @@ impl TodoBuilder {
         SyncedEventDto {
           uid: occurrence_uid.clone(),
           href: occurrence_uid,
+          resource_href: Some(resource_href.to_string()),
           title: title.clone(),
           description: description.clone(),
           date: Some(date_str),
@@ -178,7 +208,12 @@ impl TodoBuilder {
   }
 }
 
-fn parse_ics_block(ics: &str, range_start: NaiveDate, range_end: NaiveDate) -> Vec<SyncedEventDto> {
+fn parse_ics_block(
+  ics: &str,
+  resource_href: &str,
+  range_start: NaiveDate,
+  range_end: NaiveDate,
+) -> Vec<SyncedEventDto> {
   let unfolded = unfold_ics(ics);
   let mut events = Vec::new();
   let mut in_event = false;
@@ -192,7 +227,7 @@ fn parse_ics_block(ics: &str, range_start: NaiveDate, range_end: NaiveDate) -> V
       continue;
     }
     if line == "END:VEVENT" {
-      events.extend(current.build_occurrences(range_start, range_end));
+      events.extend(current.build_occurrences(resource_href, range_start, range_end));
       in_event = false;
       current = EventBuilder::default();
       continue;
@@ -256,7 +291,12 @@ impl EventBuilder {
     }
   }
 
-  fn build_occurrences(&self, range_start: NaiveDate, range_end: NaiveDate) -> Vec<SyncedEventDto> {
+  fn build_occurrences(
+    &self,
+    resource_href: &str,
+    range_start: NaiveDate,
+    range_end: NaiveDate,
+  ) -> Vec<SyncedEventDto> {
     let Some(uid) = self.uid.clone() else {
       return Vec::new();
     };
@@ -315,6 +355,7 @@ impl EventBuilder {
         SyncedEventDto {
           uid: occurrence_uid.clone(),
           href: occurrence_uid,
+          resource_href: Some(resource_href.to_string()),
           title: title.clone(),
           description: description.clone(),
           date: Some(date_str),

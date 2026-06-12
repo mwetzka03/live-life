@@ -7,7 +7,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { balance } = useAppState();
   const { t } = useLocale();
   const { pathname } = useLocation();
-  const isVisionboard = pathname.startsWith('/visionboard');
+  const isSettings = pathname.startsWith('/settings');
 
   return (
     <div className="ll-app">
@@ -52,7 +52,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Settings size={22} />
         </NavLink>
       </header>
-      <main className={`ll-main${isVisionboard ? ' ll-main-full' : ''}`}>{children}</main>
+      <main className={`ll-main${isSettings ? ' ll-scroll-page' : ' ll-main-fit'}`}>{children}</main>
     </div>
   );
 }

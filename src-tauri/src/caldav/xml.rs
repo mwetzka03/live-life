@@ -72,6 +72,91 @@ pub fn extract_calendar_data_blocks(xml: &str) -> Vec<String> {
   blocks
 }
 
+#[derive(Debug, Clone)]
+pub struct CalendarResource {
+  pub href: String,
+  pub ics: String,
+  #[allow(dead_code)]
+  pub etag: Option<String>,
+}
+
+pub fn extract_calendar_resources(xml: &str) -> Vec<CalendarResource> {
+  let mut reader = Reader::from_str(xml);
+  reader.config_mut().trim_text(true);
+  let mut buf = Vec::new();
+  let mut in_response = false;
+  let mut in_href = false;
+  let mut in_calendar_data = false;
+  let mut in_etag = false;
+  let mut current_href = String::new();
+  let mut current_etag: Option<String> = None;
+  let mut current_ics = String::new();
+  let mut resources = Vec::new();
+
+  loop {
+    match reader.read_event_into(&mut buf) {
+      Ok(Event::Start(e)) => {
+        let name = local_name(&String::from_utf8_lossy(e.name().as_ref()));
+        match name.as_str() {
+          "response" => {
+            in_response = true;
+            current_href.clear();
+            current_etag = None;
+            current_ics.clear();
+          }
+          "href" if in_response => in_href = true,
+          "getetag" if in_response => in_etag = true,
+          "calendar-data" => {
+            in_calendar_data = true;
+            current_ics.clear();
+          }
+          _ => {}
+        }
+      }
+      Ok(Event::Text(e)) => {
+        let text = e.unescape().unwrap_or_default().to_string();
+        if in_href {
+          current_href.push_str(&text);
+        } else if in_etag {
+          current_etag = Some(text);
+        } else if in_calendar_data {
+          current_ics.push_str(&text);
+        }
+      }
+      Ok(Event::CData(e)) if in_calendar_data => {
+        current_ics.push_str(&String::from_utf8_lossy(&e.into_inner()));
+      }
+      Ok(Event::End(e)) => {
+        let name = local_name(&String::from_utf8_lossy(e.name().as_ref()));
+        match name.as_str() {
+          "href" => in_href = false,
+          "getetag" => in_etag = false,
+          "calendar-data" => in_calendar_data = false,
+          "response" => {
+            in_response = false;
+            let href = current_href.trim().to_string();
+            let ics = current_ics.trim().to_string();
+            if !href.is_empty() && !ics.is_empty() && ics.contains("BEGIN:VCALENDAR") {
+              resources.push(CalendarResource {
+                href,
+                ics,
+                etag: current_etag.clone(),
+              });
+            }
+          }
+          _ => {}
+        }
+      }
+      Ok(Event::Eof) => break,
+      Err(_) => break,
+      _ => {}
+    }
+    buf.clear();
+  }
+
+  resources
+}
+
 #[derive(Default, Clone)]
 struct ResponseBlock {
   href: Option<String>,

@@ -7,6 +7,8 @@ import { openExternalLink } from '../../lib/openExternalLink';
 import { PageHeader } from '../common/InfoTip';
 import { AppIcon, ColorPicker, IconPicker } from '../common/AppIcon';
 import { Modal } from '../common/Modal';
+import { FitPager } from '../common/FitPager';
+import { useFitGridPagination } from '../../hooks/useFitGridPagination';
 
 export function ShopPanel() {
   const { app, balance } = useAppState();
@@ -16,6 +18,11 @@ export function ShopPanel() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [message, setMessage] = useState('');
 
+  const { containerRef, page, setPage, pageCount, pageItems, showPager } = useFitGridPagination(items, {
+    fallbackCardHeight: 168,
+    itemSelector: '.ll-shop-card',
+  });
+
   const purchase = (id: string) => {
     const result = app.purchaseShopItem(id);
     if (result) setMessage(t('shop.purchased', { title: result.title }));
@@ -24,86 +31,62 @@ export function ShopPanel() {
   };
 
   return (
-    <section className="ll-page">
-      <PageHeader
-        title={t('shop.title')}
-        subtitle={t('shop.subtitle')}
-        info={t('help.shop')}
-        actions={
-          <div className="ll-page-header-actions">
-            <div className="ll-balance-pill">
-              <Coins size={16} />
-              {t('shop.balanceAvailable', { balance })}
+    <section className="ll-page ll-page-fit ll-shop-page">
+      <div className="ll-page-fit-header">
+        <PageHeader
+          title={t('shop.title')}
+          subtitle={t('shop.subtitle')}
+          info={t('help.shop')}
+          actions={
+            <div className="ll-page-header-actions">
+              <div className="ll-balance-pill">
+                <Coins size={16} />
+                {t('shop.balanceAvailable', { balance })}
+              </div>
+              <button
+                type="button"
+                className="ll-btn primary"
+                onClick={() => {
+                  setEditingId(null);
+                  setModalOpen(true);
+                }}
+              >
+                <Plus size={16} /> {t('shop.addItem')}
+              </button>
             </div>
-            <button
-              type="button"
-              className="ll-btn primary"
-              onClick={() => {
-                setEditingId(null);
-                setModalOpen(true);
-              }}
-            >
-              <Plus size={16} /> {t('shop.addItem')}
-            </button>
-          </div>
-        }
-      />
+          }
+        />
+      </div>
 
       {message && <div className="ll-toast">{message}</div>}
 
-      {items.length === 0 && (
-        <div className="ll-empty">
-          <ShoppingBag size={32} />
-          <p>{t('shop.empty')}</p>
-        </div>
-      )}
-
-      {items.filter((i) => !i.bucketlistItemId).length > 0 && (
-        <section className="ll-shop-section">
-          <h2 className="ll-shop-section-title">{t('shop.sectionRegular')}</h2>
-          <div className="ll-card-grid shop">
-            {items
-              .filter((i) => !i.bucketlistItemId)
-              .map((item) => (
-                <ShopItemCard
-                  key={item.id}
-                  item={item}
-                  balance={balance}
-                  onPurchase={purchase}
-                  onEdit={(id) => {
-                    setEditingId(id);
-                    setModalOpen(true);
-                  }}
-                  onDelete={(id) => app.deleteShopItem(id)}
-                />
-              ))}
+      <div className="ll-page-fit-body" ref={containerRef}>
+        {items.length === 0 ? (
+          <div className="ll-empty">
+            <ShoppingBag size={32} />
+            <p>{t('shop.empty')}</p>
           </div>
-        </section>
-      )}
-
-      {items.filter((i) => i.bucketlistItemId).length > 0 && (
-        <section className="ll-shop-section">
-          <h2 className="ll-shop-section-title">{t('shop.sectionBucketlist')}</h2>
-          <div className="ll-card-grid shop">
-            {items
-              .filter((i) => i.bucketlistItemId)
-              .map((item) => (
-                <ShopItemCard
-                  key={item.id}
-                  item={item}
-                  balance={balance}
-                  onPurchase={purchase}
-                  onEdit={(id) => {
-                    setEditingId(id);
-                    setModalOpen(true);
-                  }}
-                  onDelete={(id) => app.deleteShopItem(id)}
-                  fromBucketlist
-                />
-              ))}
+        ) : (
+          <div className="ll-card-grid shop ll-card-grid-fit">
+            {pageItems.map((item) => (
+              <ShopItemCard
+                key={item.id}
+                item={item}
+                balance={balance}
+                onPurchase={purchase}
+                onEdit={(id) => {
+                  setEditingId(id);
+                  setModalOpen(true);
+                }}
+                onDelete={(id) => app.deleteShopItem(id)}
+                fromBucketlist={!!item.bucketlistItemId}
+              />
+            ))}
           </div>
-        </section>
-      )}
+        )}
+      </div>
+
+      {showPager && <FitPager page={page} pageCount={pageCount} onPageChange={setPage} />}
 
       <ShopItemModal open={modalOpen} itemId={editingId} onClose={() => setModalOpen(false)} />
     </section>
@@ -130,7 +113,6 @@ function ShopItemCard({
 
   return (
     <article
-      key={item.id}
       className={`ll-card shop-card${fromBucketlist ? ' shop-card-bucketlist' : ''}`}
       style={{ borderTopColor: item.color }}
     >

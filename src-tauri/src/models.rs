@@ -29,9 +29,21 @@ fn default_calendar_kind() -> String {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct CalDavDeleteEventDto {
+  pub resource_href: String,
+  pub occurrence_date: Option<String>,
+  pub start_time: Option<String>,
+  #[serde(default)]
+  pub is_recurring: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SyncedEventDto {
   pub uid: String,
   pub href: String,
+  #[serde(default)]
+  pub resource_href: Option<String>,
   pub title: String,
   pub description: Option<String>,
   #[serde(default)]

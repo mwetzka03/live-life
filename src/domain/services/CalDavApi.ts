@@ -14,6 +14,7 @@ export interface CalDavCalendarInfo {
 export interface SyncedExternalEvent {
   uid: string;
   href: string;
+  resourceHref?: string;
   title: string;
   description?: string;
   date?: string;
@@ -84,6 +85,7 @@ export class CalDavApi {
     raw: Array<{
       uid: string;
       href: string;
+      resourceHref?: string;
       title: string;
       description?: string;
       date: string;
@@ -98,6 +100,7 @@ export class CalDavApi {
     return raw.map((event) => ({
       uid: event.uid,
       href: event.href,
+      resourceHref: event.resourceHref,
       title: event.title,
       description: event.description,
       date: event.date,
@@ -123,6 +126,7 @@ export class CalDavApi {
       await invoke<Array<{
         uid: string;
         href: string;
+        resourceHref?: string;
         title: string;
         description?: string;
         date: string;
@@ -146,5 +150,29 @@ export class CalDavApi {
       start: DateUtils.addDays(today, -30),
       end: DateUtils.addDays(today, 365),
     };
+  }
+
+  static async deleteEvent(
+    account: CalDavAccount,
+    calendarHref: string,
+    request: {
+      resourceHref: string;
+      occurrenceDate?: string;
+      startTime?: string;
+      isRecurring?: boolean;
+    },
+  ): Promise<void> {
+    if (!isTauriApp()) {
+      throw new Error('Kalender-Sync ist nur in der Desktop-App verfügbar.');
+    }
+    await invoke('caldav_delete_event', {
+      config: toConfig(account, calendarHref),
+      request: {
+        resourceHref: request.resourceHref,
+        occurrenceDate: request.occurrenceDate,
+        startTime: request.startTime,
+        isRecurring: request.isRecurring ?? false,
+      },
+    });
   }
 }

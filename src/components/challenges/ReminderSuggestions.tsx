@@ -5,6 +5,7 @@ import { DateUtils } from '../../domain/services/DateUtils';
 import { useLocale } from '../../i18n/LocaleProvider';
 import { useAppState } from '../../hooks/useAppState';
 import { useLoading } from '../../lib/loading/LoadingProvider';
+import { useReminderSuggestionLimit } from '../../hooks/useReminderSuggestionLimit';
 import { AppIcon, ColorPicker, IconPicker } from '../common/AppIcon';
 import { Modal } from '../common/Modal';
 import { InfoTip } from '../common/InfoTip';
@@ -215,8 +216,9 @@ interface ReminderSuggestionsProps {
 export function ReminderSuggestions({ onAccept }: ReminderSuggestionsProps) {
   const { app } = useAppState();
   const { t, dict, locale } = useLocale();
+  const suggestionLimit = useReminderSuggestionLimit(SUGGESTION_LIMIT);
   const allOpen = app.getReminderSuggestions();
-  const suggestions = allOpen.slice(0, SUGGESTION_LIMIT);
+  const suggestions = allOpen.slice(0, suggestionLimit);
   const dateLocale = locale === 'en' ? 'en-US' : 'de-DE';
 
   const formatSuggestionMeta = (event: CalendarEvent): string | null => {

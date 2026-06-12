@@ -12,7 +12,8 @@ import {
 } from '../../lib/calendarDisplay';
 import { AppIcon } from '../common/AppIcon';
 import { InfoTip } from '../common/InfoTip';
-import { ChallengeChip, TodayChallengesPanel } from './ChallengeChip';
+import { ChallengeChip } from './ChallengeChip';
+import { CompletedChallengesTodayPanel } from './CompletedChallengesTodayPanel';
 import { CalendarEventChip } from './CalendarEventChip';
 import { EventModal } from './EventModal';
 import { ScheduledRewardsPanel } from './ScheduledRewardsPanel';
@@ -177,7 +178,7 @@ export function CalendarView({
             ))}
           </div>
         )}
-        <div className="ll-day-events-below">
+        <div className="ll-day-events-below ll-scroll">
           {events.map((ev) => renderEventChip(ev, true, day))}
           {events.length === 0 && dueChallenges.length === 0 && (
             <p className="ll-day-empty">{t('calendar.emptyWeek')}</p>
@@ -188,8 +189,9 @@ export function CalendarView({
   };
 
   return (
-    <section className="ll-page">
-      <div className="ll-page-header">
+    <section className="ll-page ll-page-fit ll-calendar-page">
+      <div className="ll-page-fit-header">
+        <div className="ll-page-header">
         <div>
           <h1>
             {t('calendar.title')}
@@ -227,11 +229,13 @@ export function CalendarView({
             <Plus size={16} /> {t('calendar.addEvent')}
           </button>
         </div>
+        </div>
       </div>
 
-      <TodayChallengesPanel />
-
-      <ScheduledRewardsPanel viewMode={viewMode} selectedDate={selectedDate} />
+      <div className="ll-page-fit-panels">
+        <CompletedChallengesTodayPanel />
+        <ScheduledRewardsPanel viewMode={viewMode} selectedDate={selectedDate} />
+      </div>
 
       <div className={`ll-calendar ll-calendar-${viewMode}`}>
         {viewMode === 'month' && (

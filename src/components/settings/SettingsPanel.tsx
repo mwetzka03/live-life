@@ -92,7 +92,7 @@ export function SettingsPanel() {
   };
 
   return (
-    <section className="ll-page">
+    <section className="ll-page ll-scroll-page">
       <PageHeader
         title={t('settings.title')}
         subtitle={t('settings.subtitle')}

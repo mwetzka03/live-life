@@ -5,7 +5,7 @@ mod icloud_reminders;
 mod models;
 
 use icloud_reminders::{AppleRemindersConfigDto, AppleRemindersListDto, AppleRemindersListFetchDto, init_scripts_dir};
-use models::{CalDavCalendarDto, CalDavConfigDto, SyncedEventDto};
+use models::{CalDavCalendarDto, CalDavConfigDto, CalDavDeleteEventDto, SyncedEventDto};
 use tauri::Manager;
 use tauri::image::Image;
 use tauri::path::BaseDirectory;
@@ -36,6 +36,14 @@ fn caldav_fetch_reminders(
   end: String,
 ) -> Result<Vec<SyncedEventDto>, String> {
   caldav::fetch_reminders(&config, &start, &end)
+}
+
+#[tauri::command]
+fn caldav_delete_event(
+  config: CalDavConfigDto,
+  request: CalDavDeleteEventDto,
+) -> Result<(), String> {
+  caldav::delete_event(&config, &request)
 }
 
 #[tauri::command]
@@ -131,6 +139,7 @@ fn main() {
       caldav_test_connection,
       caldav_fetch_events,
       caldav_fetch_reminders,
+      caldav_delete_event,
       apple_reminders_test_connection,
       apple_reminders_discover_lists,
       apple_reminders_fetch,

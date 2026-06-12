@@ -6,6 +6,7 @@ export interface ExternalEventUpsert {
   syncSourceId: string;
   externalId: string;
   externalHref: string;
+  caldavResourceHref?: string;
   title: string;
   description?: string;
   date?: string;
@@ -41,6 +42,7 @@ export class CalendarSyncService {
       syncSourceId: sourceId,
       externalId: event.uid,
       externalHref: event.href,
+      caldavResourceHref: event.resourceHref,
       title: event.title,
       description: event.description,
       date: event.date,
@@ -128,9 +130,9 @@ export class CalendarService {
     return updated;
   }
 
-  delete(id: string): boolean {
+  delete(id: string, options?: { allowSynced?: boolean }): boolean {
     const event = this.getById(id);
-    if (event?.readOnly) return false;
+    if (event?.readOnly && !options?.allowSynced) return false;
     const before = this.events.length;
     this.events = this.events.filter((e) => e.id !== id);
     return this.events.length < before;
@@ -201,6 +203,7 @@ export class CalendarService {
         endTime: input.endTime,
         externalId: input.externalId,
         externalHref: input.externalHref,
+        caldavResourceHref: input.caldavResourceHref ?? existing.caldavResourceHref,
         color: input.color ?? existing.color,
         linkedChallengeId: existing.linkedChallengeId,
         linkedShopItemId: existing.linkedShopItemId,
@@ -233,6 +236,7 @@ export class CalendarService {
       icon: syncKind === 'reminder' ? 'bell' : 'calendar',
       externalId: input.externalId,
       externalHref: input.externalHref,
+      caldavResourceHref: input.caldavResourceHref,
       syncSourceId: input.syncSourceId,
       readOnly: true,
       syncKind,

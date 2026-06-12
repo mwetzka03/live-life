@@ -119,6 +119,9 @@ export const de = {
     emptyWeek: '—',
     todayChallenges: 'Challenges heute',
     todayProgress: '{{done}}/{{total}} erledigt',
+    completedChallengesToday: 'Abgeschlossene Challenges',
+    completedChallengesSummary: '{{count}} erledigt · {{coins}} Münzen verdient',
+    completedToday: 'Heute erledigt',
     scheduledRewards: 'Geplante Belohnungen',
     rewardsEnough: 'Du hast genug Münzen ({{balance}}) für alle {{count}} offenen Belohnungen.',
     rewardsShort:
@@ -131,7 +134,12 @@ export const de = {
       editTitle: 'Termin bearbeiten',
       newTitle: 'Neuer Termin',
       readOnlyHint:
-        'Dieser Termin stammt aus einem externen Kalender und kann hier nur angesehen werden.',
+        'Dieser Termin stammt aus einem externen Kalender. Du kannst ihn hier löschen; die Änderung wird im verbundenen Kalender übernommen.',
+      deleteSeriesInstanceHint:
+        'Bei Serien wird nur dieser einzelne Termin gelöscht – die restliche Serie bleibt erhalten.',
+      deleteSynced: 'Aus Kalender löschen',
+      challengeCheckoffHint:
+        'Abhaken im Kalender markiert nur die Challenge – der Termin bleibt im verbundenen Kalender erhalten. Zum Entfernen hier „Aus Kalender löschen“ nutzen.',
       titlePlaceholder: 'Meeting, Arzt, …',
       descriptionPlaceholder: 'Optional',
       date: 'Datum',
@@ -568,6 +576,7 @@ export const de = {
     challengeComplete: 'Challenge wird abgehakt…',
     challengeReopen: 'Challenge wird geöffnet…',
     challengeDelete: 'Challenge wird gelöscht…',
+    eventDelete: 'Termin wird gelöscht…',
     challengeSave: 'Challenge wird gespeichert…',
     challengeAssign: 'Challenge wird zugewiesen…',
     challengeCreate: 'Challenge wird angelegt…',

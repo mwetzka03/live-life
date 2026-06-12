@@ -13,8 +13,14 @@ import { Modal } from '../common/Modal';
 import { AcceptReminderModal, ReminderSuggestions } from './ReminderSuggestions';
 import { ChallengeGroupCard, ChallengeGroupModal } from './ChallengeGroupModal';
 import { PageHeader } from '../common/InfoTip';
+import { FitPager } from '../common/FitPager';
+import { useFitGridPagination } from '../../hooks/useFitGridPagination';
 
 type ChallengeTab = 'active' | 'completed';
+
+type ChallengeGridItem =
+  | { type: 'group'; id: string }
+  | { type: 'challenge'; id: string };
 
 function isCompletedOneTime(challenge: Challenge, hasAnyCompletion: (id: string) => boolean): boolean {
   return challenge.recurrence === 'none' && hasAnyCompletion(challenge.id);
@@ -38,10 +44,7 @@ function ChallengeCard({ challenge, completed = false, onEdit }: ChallengeCardPr
 
   const handleUncomplete = () => {
     if (!completion) return;
-    void runWithLoading(
-      () => app.uncompleteChallenge(challenge.id, completion.date),
-      t('loading.challengeReset'),
-    );
+    void app.uncompleteChallenge(challenge.id, completion.date);
   };
 
   const handleComplete = () => {
@@ -201,6 +204,19 @@ export function ChallengePanel() {
   const visibleChallenges = tab === 'active' ? activeChallenges : completedOneTime;
   const visibleGroups = tab === 'active' ? activeGroups : completedGroups;
 
+  const gridItems = useMemo<ChallengeGridItem[]>(
+    () => [
+      ...visibleGroups.map((g) => ({ type: 'group' as const, id: g.id })),
+      ...visibleChallenges.map((c) => ({ type: 'challenge' as const, id: c.id })),
+    ],
+    [visibleGroups, visibleChallenges],
+  );
+
+  const { containerRef, page, setPage, pageCount, pageItems, showPager } = useFitGridPagination(
+    gridItems,
+    { fallbackCardHeight: 156 },
+  );
+
   const openCreate = () => {
     setEditingId(null);
     setModalOpen(true);
@@ -212,87 +228,96 @@ export function ChallengePanel() {
   };
 
   return (
-    <section className="ll-page">
-      <PageHeader
-        title={t('challenges.title')}
-        subtitle={t('challenges.subtitle')}
-        info={t('help.challenges')}
-        actions={
-          <div className="ll-page-header-actions">
+    <section className="ll-page ll-page-fit">
+      <div className="ll-page-fit-header">
+        <PageHeader
+          title={t('challenges.title')}
+          subtitle={t('challenges.subtitle')}
+          info={t('help.challenges')}
+          actions={
+            <div className="ll-page-header-actions">
+              <button
+                type="button"
+                className="ll-btn ghost"
+                onClick={() => {
+                  setEditingGroupId(null);
+                  setGroupModalOpen(true);
+                }}
+              >
+                <Layers size={16} /> {t('challenges.groups.add')}
+              </button>
+              <button type="button" className="ll-btn primary" onClick={openCreate}>
+                <Plus size={16} /> {t('challenges.add')}
+              </button>
+            </div>
+          }
+        />
+      </div>
+
+      <div className="ll-page-fit-toolbar">
+        <ReminderSuggestions onAccept={setAcceptReminder} />
+
+        <div className="ll-challenge-tabs">
+          <div className="ll-segment">
             <button
               type="button"
-              className="ll-btn ghost"
-              onClick={() => {
-                setEditingGroupId(null);
-                setGroupModalOpen(true);
-              }}
+              className={tab === 'active' ? 'active' : ''}
+              onClick={() => setTab('active')}
             >
-              <Layers size={16} /> {t('challenges.groups.add')}
+              {t('challenges.tabActive')}
             </button>
-            <button type="button" className="ll-btn primary" onClick={openCreate}>
-              <Plus size={16} /> {t('challenges.add')}
+            <button
+              type="button"
+              className={tab === 'completed' ? 'active' : ''}
+              onClick={() => setTab('completed')}
+            >
+              {t('challenges.tabCompleted')}
+              {completedOneTime.length > 0 && (
+                <span className="ll-tab-badge">{completedOneTime.length}</span>
+              )}
             </button>
           </div>
-        }
-      />
-
-      <ReminderSuggestions onAccept={setAcceptReminder} />
-
-      <div className="ll-challenge-tabs">
-        <div className="ll-segment">
-          <button
-            type="button"
-            className={tab === 'active' ? 'active' : ''}
-            onClick={() => setTab('active')}
-          >
-            {t('challenges.tabActive')}
-          </button>
-          <button
-            type="button"
-            className={tab === 'completed' ? 'active' : ''}
-            onClick={() => setTab('completed')}
-          >
-            {t('challenges.tabCompleted')}
-            {completedOneTime.length > 0 && (
-              <span className="ll-tab-badge">{completedOneTime.length}</span>
-            )}
-          </button>
         </div>
       </div>
 
-      <div className="ll-card-grid">
-        {tab === 'completed' && completedOneTime.length === 0 && (
-          <div className="ll-empty">
-            <CheckCircle2 size={32} />
-            <p>{t('challenges.emptyCompleted')}</p>
-          </div>
-        )}
-        {tab === 'active' && activeChallenges.length === 0 && activeGroups.length === 0 && (
-          <div className="ll-empty">
-            <Flame size={32} />
-            <p>{t('challenges.emptyActive')}</p>
-          </div>
-        )}
-        {visibleGroups.map((g) => (
-          <ChallengeGroupCard
-            key={g.id}
-            group={g}
-            completed={tab === 'completed'}
-            onEdit={(id) => {
-              setEditingGroupId(id);
-              setGroupModalOpen(true);
-            }}
-          />
-        ))}
-        {visibleChallenges.map((ch) => (
-          <ChallengeCard
-            key={ch.id}
-            challenge={ch}
-            completed={tab === 'completed'}
-            onEdit={openEdit}
-          />
-        ))}
+      <div className="ll-page-fit-body" ref={containerRef}>
+        <div className="ll-card-grid ll-card-grid-fit">
+          {tab === 'completed' && gridItems.length === 0 && (
+            <div className="ll-empty">
+              <CheckCircle2 size={32} />
+              <p>{t('challenges.emptyCompleted')}</p>
+            </div>
+          )}
+          {tab === 'active' && gridItems.length === 0 && (
+            <div className="ll-empty">
+              <Flame size={32} />
+              <p>{t('challenges.emptyActive')}</p>
+            </div>
+          )}
+          {pageItems.map((item) =>
+            item.type === 'group' ? (
+              <ChallengeGroupCard
+                key={`group-${item.id}`}
+                group={app.challengeGroups.getById(item.id)!}
+                completed={tab === 'completed'}
+                onEdit={(id) => {
+                  setEditingGroupId(id);
+                  setGroupModalOpen(true);
+                }}
+              />
+            ) : (
+              <ChallengeCard
+                key={`challenge-${item.id}`}
+                challenge={app.challenges.getById(item.id)!}
+                completed={tab === 'completed'}
+                onEdit={openEdit}
+              />
+            ),
+          )}
+        </div>
       </div>
+
+      {showPager && <FitPager page={page} pageCount={pageCount} onPageChange={setPage} />}
 
       <ChallengeModal open={modalOpen} challengeId={editingId} onClose={() => setModalOpen(false)} />
       <ChallengeGroupModal

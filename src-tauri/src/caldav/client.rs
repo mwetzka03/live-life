@@ -4,7 +4,8 @@ use reqwest::Method;
 use url::Url;
 
 use crate::models::CalDavCalendarDto;
-use super::xml::{extract_calendar_data_blocks, extract_href_after_marker, parse_calendar_list};
+use super::delete::{add_exdate_to_ics, is_recurring_ics};
+use super::xml::{extract_calendar_data_blocks, extract_calendar_resources, extract_href_after_marker, parse_calendar_list, CalendarResource};
 
 fn dav_method(name: &'static [u8]) -> Method {
   Method::from_bytes(name).expect("valid method")
@@ -83,23 +84,58 @@ impl CalDavClient {
     Ok(extract_calendar_data_blocks(&text))
   }
 
-  pub fn fetch_reminder_data(
+  pub fn fetch_calendar_resources(
     &self,
     calendar_href: &str,
     start: &str,
     end: &str,
-  ) -> Result<Vec<String>, String> {
+  ) -> Result<Vec<CalendarResource>, String> {
+    let text = self.fetch_calendar_report_body(calendar_href, start, end)?;
+    Ok(extract_calendar_resources(&text))
+  }
+
+  pub fn fetch_reminder_resources(
+    &self,
+    calendar_href: &str,
+    start: &str,
+    end: &str,
+  ) -> Result<Vec<CalendarResource>, String> {
     for style in [
       ReminderQueryStyle::CompTimeRange,
       ReminderQueryStyle::PropDueTimeRange,
       ReminderQueryStyle::Unfiltered,
     ] {
-      let blocks = self.fetch_reminder_query(calendar_href, start, end, style)?;
-      if !blocks.is_empty() {
-        return Ok(blocks);
+      let text = self.fetch_reminder_report_body(calendar_href, start, end, style)?;
+      let resources = extract_calendar_resources(&text);
+      if !resources.is_empty() {
+        return Ok(resources);
       }
     }
     Ok(Vec::new())
+  }
+
+  pub fn delete_calendar_event(
+    &self,
+    resource_href: &str,
+    occurrence_date: Option<&str>,
+    start_time: Option<&str>,
+    is_recurring: bool,
+  ) -> Result<(), String> {
+    let url = resolve_href(&self.root_url, resource_href)?;
+
+    if is_recurring {
+      let Some(date) = occurrence_date else {
+        return Err("Datum für Serien-Termin fehlt.".into());
+      };
+      let (ics, etag) = self.get_resource(&url)?;
+      if !is_recurring_ics(&ics) {
+        return self.delete_resource(&url);
+      }
+      let updated = add_exdate_to_ics(&ics, date, start_time)?;
+      self.put_resource(&url, &updated, etag.as_deref())
+    } else {
+      self.delete_resource(&url)
+    }
   }
 
   /// Prüft, ob im Sync-Zeitraum Termine bzw. Erinnerungen (VTODO) vorhanden sind.
@@ -307,6 +343,192 @@ impl CalDavClient {
       .headers(headers)
       .header("Depth", depth)
       .body(body.to_string()))
+  }
+
+  fn fetch_calendar_report_body(
+    &self,
+    calendar_href: &str,
+    start: &str,
+    end: &str,
+  ) -> Result<String, String> {
+    let url = resolve_href(&self.root_url, calendar_href)?;
+    let start_fmt = to_caldav_datetime(start, false)?;
+    let end_fmt = to_caldav_datetime(end, true)?;
+
+    let body = format!(
+      r#"<?xml version="1.0" encoding="utf-8"?>
+<C:calendar-query xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
+  <D:prop>
+    <D:getetag/>
+    <C:calendar-data/>
+  </D:prop>
+  <C:filter>
+    <C:comp-filter name="VCALENDAR">
+      <C:comp-filter name="VEVENT">
+        <C:time-range start="{start_fmt}" end="{end_fmt}"/>
+      </C:comp-filter>
+    </C:comp-filter>
+  </C:filter>
+</C:calendar-query>"#
+    );
+
+    let response = self
+      .propfind_or_report(dav_method(b"REPORT"), &url, "1", &body)?
+      .send()
+      .map_err(|e| format!("Abruf fehlgeschlagen: {e}"))?;
+
+    let status = response.status().as_u16();
+    let text = response.text().map_err(|e| e.to_string())?;
+    if !(200..300).contains(&status) && status != 207 {
+      return Err(format_http_error("REPORT", status, &text));
+    }
+
+    Ok(text)
+  }
+
+  fn fetch_reminder_report_body(
+    &self,
+    calendar_href: &str,
+    start: &str,
+    end: &str,
+    style: ReminderQueryStyle,
+  ) -> Result<String, String> {
+    let url = resolve_href(&self.root_url, calendar_href)?;
+    let start_fmt = to_caldav_datetime(start, false)?;
+    let end_fmt = to_caldav_datetime(end, true)?;
+
+    let filter = match style {
+      ReminderQueryStyle::CompTimeRange => format!(
+        r#"<C:comp-filter name="VCALENDAR">
+      <C:comp-filter name="VTODO">
+        <C:time-range start="{start_fmt}" end="{end_fmt}"/>
+      </C:comp-filter>
+    </C:comp-filter>"#
+      ),
+      ReminderQueryStyle::PropDueTimeRange => format!(
+        r#"<C:comp-filter name="VCALENDAR">
+      <C:comp-filter name="VTODO">
+        <C:prop-filter name="DUE">
+          <C:time-range start="{start_fmt}" end="{end_fmt}"/>
+        </C:prop-filter>
+      </C:comp-filter>
+    </C:comp-filter>"#
+      ),
+      ReminderQueryStyle::Unfiltered => r#"<C:comp-filter name="VCALENDAR">
+      <C:comp-filter name="VTODO"/>
+    </C:comp-filter>"#
+        .to_string(),
+    };
+
+    let body = format!(
+      r#"<?xml version="1.0" encoding="utf-8"?>
+<C:calendar-query xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
+  <D:prop>
+    <D:getetag/>
+    <C:calendar-data/>
+  </D:prop>
+  <C:filter>
+    {filter}
+  </C:filter>
+</C:calendar-query>"#
+    );
+
+    let response = self
+      .propfind_or_report(dav_method(b"REPORT"), &url, "1", &body)?
+      .send()
+      .map_err(|e| format!("Abruf fehlgeschlagen: {e}"))?;
+
+    let status = response.status().as_u16();
+    let text = response.text().map_err(|e| e.to_string())?;
+    if !(200..300).contains(&status) && status != 207 {
+      return Err(format_http_error("REPORT", status, &text));
+    }
+
+    Ok(text)
+  }
+
+  fn get_resource(&self, url: &Url) -> Result<(String, Option<String>), String> {
+    let response = self
+      .dav_request(dav_method(b"GET"), url, None, None)?
+      .send()
+      .map_err(|e| format!("GET fehlgeschlagen: {e}"))?;
+
+    let status = response.status().as_u16();
+    let etag = response
+      .headers()
+      .get("etag")
+      .and_then(|v| v.to_str().ok())
+      .map(|s| s.trim_matches('"').to_string());
+    let text = response.text().map_err(|e| e.to_string())?;
+    if !(200..300).contains(&status) {
+      return Err(format_http_error("GET", status, &text));
+    }
+    Ok((text, etag))
+  }
+
+  fn put_resource(&self, url: &Url, body: &str, etag: Option<&str>) -> Result<(), String> {
+    let mut request = self.dav_request(
+      dav_method(b"PUT"),
+      url,
+      Some("text/calendar; charset=utf-8"),
+      Some(body),
+    )?;
+    if let Some(tag) = etag {
+      request = request.header("If-Match", format!("\"{tag}\""));
+    }
+    let response = request.send().map_err(|e| format!("PUT fehlgeschlagen: {e}"))?;
+    let status = response.status().as_u16();
+    let text = response.text().unwrap_or_default();
+    if !(200..300).contains(&status) {
+      return Err(format_http_error("PUT", status, &text));
+    }
+    Ok(())
+  }
+
+  fn delete_resource(&self, url: &Url) -> Result<(), String> {
+    let response = self
+      .dav_request(dav_method(b"DELETE"), url, None, None)?
+      .send()
+      .map_err(|e| format!("DELETE fehlgeschlagen: {e}"))?;
+    let status = response.status().as_u16();
+    let text = response.text().unwrap_or_default();
+    if status == 404 {
+      return Ok(());
+    }
+    if !(200..300).contains(&status) {
+      return Err(format_http_error("DELETE", status, &text));
+    }
+    Ok(())
+  }
+
+  fn dav_request(
+    &self,
+    method: Method,
+    url: &Url,
+    content_type: Option<&str>,
+    body: Option<&str>,
+  ) -> Result<reqwest::blocking::RequestBuilder, String> {
+    let mut headers = HeaderMap::new();
+    headers.insert(
+      AUTHORIZATION,
+      HeaderValue::from_str(&self.auth_header).map_err(|e| e.to_string())?,
+    );
+    if let Some(ct) = content_type {
+      headers.insert(
+        CONTENT_TYPE,
+        HeaderValue::from_str(ct).map_err(|e| e.to_string())?,
+      );
+    }
+    headers.insert(
+      USER_AGENT,
+      HeaderValue::from_static("LiveLife/0.1 CalDAV"),
+    );
+
+    let mut builder = self.http.request(method, url.clone()).headers(headers);
+    if let Some(payload) = body {
+      builder = builder.body(payload.to_string());
+    }
+    Ok(builder)
   }
 }
 
