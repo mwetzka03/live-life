@@ -13,6 +13,8 @@ pub struct AppleRemindersConfigDto {
   pub password: String,
   #[serde(default)]
   pub two_factor_code: Option<String>,
+  #[allow(dead_code)]
+  #[serde(default)]
   pub account_id: String,
   #[serde(default)]
   pub list_guid: Option<String>,
@@ -34,6 +36,8 @@ pub struct AppleRemindersConfigDto {
   pub due_date: Option<String>,
   #[serde(default)]
   pub due_time: Option<String>,
+  #[serde(default)]
+  pub subtasks: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, serde::Serialize)]
@@ -184,6 +188,11 @@ fn run_python(
       cmd.arg("--due-time").arg(due_time);
     }
   }
+  if let Some(subtasks) = &config.subtasks {
+    if !subtasks.trim().is_empty() {
+      cmd.arg("--subtasks").arg(subtasks);
+    }
+  }
 
   cmd.env("PYTHONIOENCODING", "utf-8");
   cmd.env("PYTHONUTF8", "1");
@@ -204,6 +213,8 @@ struct BridgeResponse {
   completion_by_href: Option<HashMap<String, bool>>,
   list_results: Option<Vec<AppleRemindersListFetchDto>>,
   reminder: Option<CreatedReminderDto>,
+  #[serde(default)]
+  subtask_hrefs: Option<HashMap<String, String>>,
 }
 
 #[derive(Debug, Clone, Deserialize, serde::Serialize)]
@@ -212,6 +223,16 @@ pub struct CreatedReminderDto {
   pub uid: String,
   pub href: String,
   pub title: String,
+}
+
+#[derive(Debug, Clone, Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreatedReminderGroupDto {
+  pub uid: String,
+  pub href: String,
+  pub title: String,
+  #[serde(default)]
+  pub subtask_hrefs: HashMap<String, String>,
 }
 
 #[derive(Debug, Clone, Deserialize, serde::Serialize)]
@@ -361,7 +382,23 @@ pub fn set_reminder_status(config: &AppleRemindersConfigDto) -> Result<String, S
 pub fn create_reminder(config: &AppleRemindersConfigDto) -> Result<CreatedReminderDto, String> {
   let resp = run_bridge("create-reminder", config)?;
   resp.reminder
-    .ok_or_else(|| "Bridge lieferte keine Erinnerung zurück.".into())
+    .ok_or_else(|| "Bridge lieferte keine Erinnerung zurück.".to_string())
+}
+
+pub fn create_reminder_group(config: &AppleRemindersConfigDto) -> Result<CreatedReminderGroupDto, String> {
+  let resp = run_bridge("create-reminder-group", config)?;
+  let parent = resp
+    .reminder
+    .ok_or_else(|| "Bridge lieferte keine Erinnerung zurück.".to_string())?;
+
+  let subtask_hrefs = resp.subtask_hrefs.unwrap_or_default();
+
+  Ok(CreatedReminderGroupDto {
+    uid: parent.uid,
+    href: parent.href,
+    title: parent.title,
+    subtask_hrefs,
+  })
 }
 
 pub fn delete_reminder(config: &AppleRemindersConfigDto) -> Result<String, String> {

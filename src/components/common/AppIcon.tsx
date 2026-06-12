@@ -27,7 +27,7 @@ export function IconPicker({ value, onChange }: IconPickerProps) {
           onClick={() => onChange(name)}
           aria-label={name}
         >
-          <AppIcon name={name} size={16} />
+          <AppIcon name={name} size={16} color="currentColor" />
         </button>
       ))}
     </div>

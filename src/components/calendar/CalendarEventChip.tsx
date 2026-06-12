@@ -24,7 +24,10 @@ export function CalendarEventChip({
   const { t } = useLocale();
   const challenge = event.linkedChallengeId ? app.challenges.getById(event.linkedChallengeId) : undefined;
   const shopItem = event.linkedShopItemId ? app.shop.getById(event.linkedShopItemId) : undefined;
-  const challengeDone = challenge ? app.challenges.isDoneOn(challenge, date) : false;
+  const completionDate = event.date ?? date;
+  const challengeDone = challenge
+    ? app.challenges.isCompletedOn(challenge.id, completionDate)
+    : false;
   const rewardClaimed = app.eventRewards.isClaimed(event.id);
   const isShop = !!shopItem;
   const isChallenge = !!challenge;
@@ -41,12 +44,12 @@ export function CalendarEventChip({
       return;
     }
     if (challenge) {
-      const canToggleOff = challenge.recurrence !== 'irregular';
+      const canToggleOff = challenge.recurrence !== 'irregular' || challengeDone;
       void runWithLoading(async () => {
         if (challengeDone && canToggleOff) {
-          await app.uncompleteChallenge(challenge.id, date);
+          await app.uncompleteChallenge(challenge.id, completionDate);
         } else {
-          await app.completeChallenge(challenge.id, date);
+          await app.completeLinkedEventChallenge(event.id, completionDate);
         }
       }, challengeDone ? t('loading.challengeReopen') : t('loading.challengeComplete'));
     }
@@ -104,12 +107,12 @@ export function CalendarEventChip({
           )}
           {isChallenge && challenge && !challengeDone && (
             <small className="ll-reward">
-              +{app.challenges.getProjectedReward(challenge, date).total}
+              +{app.challenges.getProjectedReward(challenge, completionDate).total}
             </small>
           )}
           {isChallenge && challenge && challengeDone && (
             <small className="ll-reward">
-              +{app.challenges.getCompletionsForDate(date).find((c) => c.challengeId === challenge.id)?.coinsEarned ?? challenge.coinReward}
+              +{app.challenges.getCompletionsForDate(completionDate).find((c) => c.challengeId === challenge.id)?.coinsEarned ?? challenge.coinReward}
             </small>
           )}
           {isShop && shopItem && !done && !canAffordShop && (

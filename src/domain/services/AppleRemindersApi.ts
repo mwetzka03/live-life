@@ -35,6 +35,7 @@ function toConfig(
     description?: string;
     dueDate?: string;
     dueTime?: string;
+    subtasks?: string;
   },
 ) {
   return {
@@ -49,6 +50,7 @@ function toConfig(
     description: extras?.description,
     dueDate: extras?.dueDate,
     dueTime: extras?.dueTime,
+    subtasks: extras?.subtasks,
   };
 }
 
@@ -251,6 +253,30 @@ export class AppleRemindersApi {
         description: input.description,
         dueDate: input.date,
         dueTime: input.startTime,
+      }),
+    });
+  }
+
+  static async createReminderGroup(
+    account: AppleRemindersAccount,
+    listGuid: string,
+    input: {
+      title: string;
+      description?: string;
+      date?: string;
+      startTime?: string;
+      subtasks: Array<{ key: string; title: string }>;
+    },
+  ): Promise<{ uid: string; href: string; title: string; subtaskHrefs: Record<string, string> }> {
+    AppleRemindersApi.ensureDesktop();
+    return invoke('apple_reminders_create_group', {
+      config: toConfig(account, {
+        listGuid,
+        title: input.title,
+        description: input.description,
+        dueDate: input.date,
+        dueTime: input.startTime,
+        subtasks: JSON.stringify(input.subtasks),
       }),
     });
   }

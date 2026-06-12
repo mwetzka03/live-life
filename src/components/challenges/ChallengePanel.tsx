@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Check, CheckCircle2, Edit3, Flame, Plus, Trash2, Undo2 } from 'lucide-react';
-import type { CalendarEvent, Challenge, ChallengeCategory, RecurrenceType } from '../../domain/models/AppData';
+import { Check, CheckCircle2, Edit3, Flame, Layers, Plus, Trash2, Undo2 } from 'lucide-react';
+import type { CalendarEvent, Challenge, ChallengeCategory, ChallengeGroup, RecurrenceType } from '../../domain/models/AppData';
 import { DateUtils } from '../../domain/services/DateUtils';
 import { isTauriApp } from '../../domain/services/CalDavApi';
 import { StreakMultiplier } from '../../domain/services/StreakMultiplier';
@@ -11,6 +11,7 @@ import { useLoading } from '../../lib/loading/LoadingProvider';
 import { AppIcon, ColorPicker, IconPicker } from '../common/AppIcon';
 import { Modal } from '../common/Modal';
 import { AcceptReminderModal, ReminderSuggestions } from './ReminderSuggestions';
+import { ChallengeGroupCard, ChallengeGroupModal } from './ChallengeGroupModal';
 import { PageHeader } from '../common/InfoTip';
 
 type ChallengeTab = 'active' | 'completed';
@@ -148,26 +149,57 @@ function ChallengeCard({ challenge, completed = false, onEdit }: ChallengeCardPr
   );
 }
 
+function isCompletedGroup(group: ChallengeGroup, hasAnyCompletion: (id: string) => boolean, getChallenges: (gid: string) => Challenge[]): boolean {
+  const challenges = getChallenges(group.id);
+  if (challenges.length === 0) return false;
+  return challenges.every((c) => hasAnyCompletion(c.id));
+}
+
 export function ChallengePanel() {
   const { app } = useAppState();
   const { t } = useLocale();
   const challenges = app.challenges.getAll();
+  const groups = app.challengeGroups.getAll();
   const [tab, setTab] = useState<ChallengeTab>('active');
   const [modalOpen, setModalOpen] = useState(false);
+  const [groupModalOpen, setGroupModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [acceptReminder, setAcceptReminder] = useState<CalendarEvent | null>(null);
 
-  const { activeChallenges, completedOneTime } = useMemo(() => {
+  const { activeChallenges, completedOneTime, activeGroups, completedGroups } = useMemo(() => {
     const active: Challenge[] = [];
     const completed: Challenge[] = [];
     for (const ch of challenges) {
+      if (ch.groupId) continue;
       if (isCompletedOneTime(ch, app.challenges.hasAnyCompletion.bind(app.challenges))) completed.push(ch);
       else active.push(ch);
     }
-    return { activeChallenges: active, completedOneTime: completed };
-  }, [challenges, app.challenges]);
+    const activeG: ChallengeGroup[] = [];
+    const completedG: ChallengeGroup[] = [];
+    for (const g of groups) {
+      if (
+        isCompletedGroup(
+          g,
+          app.challenges.hasAnyCompletion.bind(app.challenges),
+          app.challengeGroups.getChallengesForGroup.bind(app.challengeGroups),
+        )
+      ) {
+        completedG.push(g);
+      } else {
+        activeG.push(g);
+      }
+    }
+    return {
+      activeChallenges: active,
+      completedOneTime: completed,
+      activeGroups: activeG,
+      completedGroups: completedG,
+    };
+  }, [challenges, groups, app.challenges, app.challengeGroups]);
 
   const visibleChallenges = tab === 'active' ? activeChallenges : completedOneTime;
+  const visibleGroups = tab === 'active' ? activeGroups : completedGroups;
 
   const openCreate = () => {
     setEditingId(null);
@@ -186,9 +218,21 @@ export function ChallengePanel() {
         subtitle={t('challenges.subtitle')}
         info={t('help.challenges')}
         actions={
-          <button type="button" className="ll-btn primary" onClick={openCreate}>
-            <Plus size={16} /> {t('challenges.add')}
-          </button>
+          <div className="ll-page-header-actions">
+            <button
+              type="button"
+              className="ll-btn ghost"
+              onClick={() => {
+                setEditingGroupId(null);
+                setGroupModalOpen(true);
+              }}
+            >
+              <Layers size={16} /> {t('challenges.groups.add')}
+            </button>
+            <button type="button" className="ll-btn primary" onClick={openCreate}>
+              <Plus size={16} /> {t('challenges.add')}
+            </button>
+          </div>
         }
       />
 
@@ -223,12 +267,23 @@ export function ChallengePanel() {
             <p>{t('challenges.emptyCompleted')}</p>
           </div>
         )}
-        {tab === 'active' && activeChallenges.length === 0 && (
+        {tab === 'active' && activeChallenges.length === 0 && activeGroups.length === 0 && (
           <div className="ll-empty">
             <Flame size={32} />
             <p>{t('challenges.emptyActive')}</p>
           </div>
         )}
+        {visibleGroups.map((g) => (
+          <ChallengeGroupCard
+            key={g.id}
+            group={g}
+            completed={tab === 'completed'}
+            onEdit={(id) => {
+              setEditingGroupId(id);
+              setGroupModalOpen(true);
+            }}
+          />
+        ))}
         {visibleChallenges.map((ch) => (
           <ChallengeCard
             key={ch.id}
@@ -240,6 +295,11 @@ export function ChallengePanel() {
       </div>
 
       <ChallengeModal open={modalOpen} challengeId={editingId} onClose={() => setModalOpen(false)} />
+      <ChallengeGroupModal
+        open={groupModalOpen}
+        groupId={editingGroupId}
+        onClose={() => setGroupModalOpen(false)}
+      />
       <AcceptReminderModal
         open={!!acceptReminder}
         event={acceptReminder}
@@ -283,6 +343,7 @@ function ChallengeModal({ open, challengeId, onClose }: ChallengeModalProps) {
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [icloudListKey, setIcloudListKey] = useState('');
+  const [groupId, setGroupId] = useState('');
 
   useEffect(() => {
     if (!open) return;
@@ -300,6 +361,7 @@ function ChallengeModal({ open, challengeId, onClose }: ChallengeModalProps) {
     setStartTime(existing?.startTime ?? '');
     setEndTime(existing?.icloudReminderHref ? '' : (existing?.endTime ?? ''));
     setIcloudListKey(existing?.icloudReminderSourceId ?? '');
+    setGroupId(existing?.groupId ?? '');
     setSaveError('');
   }, [open, existing]);
 
@@ -352,9 +414,13 @@ function ChallengeModal({ open, challengeId, onClose }: ChallengeModalProps) {
       let savedId = challengeId;
       if (challengeId) {
         app.updateChallenge(challengeId, payload);
+        app.setChallengeGroupLink(challengeId, groupId || undefined);
       } else {
         const created = app.createChallenge(payload);
         savedId = created.id;
+        if (groupId) {
+          app.setChallengeGroupLink(created.id, groupId);
+        }
       }
 
       const shouldCreateICloud =
@@ -535,6 +601,20 @@ function ChallengeModal({ open, challengeId, onClose }: ChallengeModalProps) {
         )}
         {existing?.icloudReminderHref && (
           <p className="ll-form-hint">{t('challenges.modal.icloudLinked')}</p>
+        )}
+
+        {recurrence === 'none' && app.challengeGroups.getAll().length > 0 && (
+          <label>
+            {t('challenges.groups.linkToGroup')}
+            <select value={groupId} onChange={(e) => setGroupId(e.target.value)}>
+              <option value="">{t('common.noneOption')}</option>
+              {app.challengeGroups.getAll().map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.title}
+                </option>
+              ))}
+            </select>
+          </label>
         )}
 
         <p className="ll-form-hint">{t('challenges.modal.streakBonus')}</p>

@@ -18,10 +18,12 @@ import { DateUtils } from './DateUtils';
 import { EventRewardService } from './EventRewardService';
 import { BucketlistService } from './BucketlistService';
 import { ShopService } from './ShopService';
+import { ChallengeGroupService } from './ChallengeGroupService';
+import { VisionBoardService } from './VisionBoardService';
 
 type Listener = () => void;
 
-function normalizeAppData(raw: Partial<AppData> | null): AppData {
+export function normalizeAppData(raw: Partial<AppData> | null): AppData {
   if (!raw) return { ...EMPTY_APP_DATA };
   return {
     version: raw.version ?? 1,
@@ -31,6 +33,7 @@ function normalizeAppData(raw: Partial<AppData> | null): AppData {
       return { ...event, syncKind: 'reminder' as const, icon: 'bell' };
     }),
     challenges: raw.challenges ?? [],
+    challengeGroups: raw.challengeGroups ?? [],
     completions: raw.completions ?? [],
     eventRewardClaims: raw.eventRewardClaims ?? [],
     shopItems: raw.shopItems ?? [],
@@ -44,6 +47,8 @@ function normalizeAppData(raw: Partial<AppData> | null): AppData {
       autoSync: a.autoSync ?? true,
     })),
     bucketlistItems: raw.bucketlistItems ?? [],
+    visionBoards: raw.visionBoards ?? [],
+    activeVisionBoardId: raw.activeVisionBoardId,
   };
 }
 
@@ -59,6 +64,8 @@ export class AppStateService {
   readonly coins: CoinService;
   readonly shop: ShopService;
   readonly bucketlist: BucketlistService;
+  readonly challengeGroups: ChallengeGroupService;
+  readonly visionBoards: VisionBoardService;
   readonly eventRewards: EventRewardService;
   readonly calDavAccounts: CalDavAccountService;
   readonly appleRemindersAccounts: AppleRemindersAccountService;
@@ -71,8 +78,15 @@ export class AppStateService {
     this.coins = new CoinService(this.data.transactions);
     this.calendar = new CalendarService(this.data.events);
     this.challenges = new ChallengeService(this.data.challenges, this.data.completions);
+    this.challengeGroups = new ChallengeGroupService(this.data.challengeGroups, (id) =>
+      this.challenges.getById(id),
+    );
     this.shop = new ShopService(this.data.shopItems, this.data.purchases, this.coins);
     this.bucketlist = new BucketlistService(this.data.bucketlistItems);
+    this.visionBoards = new VisionBoardService(
+      this.data.visionBoards,
+      this.data.activeVisionBoardId,
+    );
     this.eventRewards = new EventRewardService(this.data.eventRewardClaims);
     this.calDavAccounts = new CalDavAccountService(this.data.calDavAccounts);
     this.appleRemindersAccounts = new AppleRemindersAccountService(this.data.appleRemindersAccounts);
@@ -331,11 +345,14 @@ export class AppStateService {
   private persist(): void {
     this.data.events = this.calendar.getAll();
     this.data.challenges = this.challenges.getAll();
+    this.data.challengeGroups = this.challengeGroups.getAll();
     this.data.completions = this.challenges.getCompletions();
     this.data.eventRewardClaims = this.eventRewards.getAll();
     this.data.shopItems = this.shop.getItems();
     this.data.purchases = this.shop.getPurchases();
     this.data.bucketlistItems = this.bucketlist.getAll();
+    this.data.visionBoards = this.visionBoards.getAll();
+    this.data.activeVisionBoardId = this.visionBoards.getActiveId();
     this.data.calDavAccounts = this.calDavAccounts.getAll();
     this.data.appleRemindersAccounts = this.appleRemindersAccounts.getAll();
     this.repository.save(this.data);
@@ -352,11 +369,14 @@ export class AppStateService {
       ...this.data,
       events: this.calendar.getAll(),
       challenges: this.challenges.getAll(),
+      challengeGroups: this.challengeGroups.getAll(),
       completions: this.challenges.getCompletions(),
       eventRewardClaims: this.eventRewards.getAll(),
       shopItems: this.shop.getItems(),
       purchases: this.shop.getPurchases(),
       bucketlistItems: this.bucketlist.getAll(),
+      visionBoards: this.visionBoards.getAll(),
+      activeVisionBoardId: this.visionBoards.getActiveId(),
       transactions: this.coins.getTransactions(),
       calDavAccounts: this.calDavAccounts.getAll(),
       appleRemindersAccounts: this.appleRemindersAccounts.getAll(),
@@ -609,6 +629,21 @@ export class AppStateService {
       }
     }
 
+    if (challenge?.groupId) {
+      const group = this.challengeGroups.getById(challenge.groupId);
+      const subHref = group?.icloudSubtaskHrefs?.[challengeId];
+      if (subHref && group.icloudReminderSourceId) {
+        const parsed = parseAppleRemindersSourceId(group.icloudReminderSourceId);
+        if (parsed) {
+          return {
+            accountId: parsed.accountId,
+            listGuid: parsed.listGuid,
+            href: subHref,
+          };
+        }
+      }
+    }
+
     return null;
   }
 
@@ -649,6 +684,186 @@ export class AppStateService {
       icloudReminderHref: created.href,
       icloudReminderSourceId: sourceId,
     });
+    this.persist();
+  }
+
+  async createChallengeGroupICloudReminder(groupId: string, sourceId: string): Promise<void> {
+    const group = this.challengeGroups.getById(groupId);
+    if (!group || group.icloudReminderHref) return;
+
+    const parsed = parseAppleRemindersSourceId(sourceId);
+    if (!parsed) throw new Error('Ungültige Erinnerungs-Liste.');
+
+    const account = this.appleRemindersAccounts.getById(parsed.accountId);
+    if (!account) throw new Error('Apple-Reminders-Konto nicht gefunden.');
+
+    const subtasks = this.challengeGroups
+      .getChallengesForGroup(groupId)
+      .map((c) => ({ key: c.id, title: c.title }));
+
+    const created = await AppleRemindersApi.createReminderGroup(account, parsed.listGuid, {
+      title: group.title,
+      description: group.description,
+      date: group.startDate,
+      startTime: group.startTime,
+      subtasks,
+    });
+
+    this.challengeGroups.update(groupId, {
+      icloudReminderHref: created.href,
+      icloudReminderSourceId: sourceId,
+      icloudSubtaskHrefs: created.subtaskHrefs,
+    });
+    this.persist();
+  }
+
+  private syncChallengeGroupMembership(challengeIds: string[], groupId: string) {
+    for (const ch of this.challenges.getAll()) {
+      if (challengeIds.includes(ch.id)) {
+        if (ch.groupId !== groupId) {
+          this.challenges.update(ch.id, { groupId });
+        }
+      } else if (ch.groupId === groupId) {
+        this.challenges.update(ch.id, { groupId: undefined });
+      }
+    }
+  }
+
+  setChallengeGroupLink(challengeId: string, groupId: string | undefined) {
+    const challenge = this.challenges.getById(challengeId);
+    if (!challenge) return;
+
+    const oldGroupId = challenge.groupId;
+    if (oldGroupId === groupId) return;
+
+    this.challenges.update(challengeId, { groupId });
+
+    if (oldGroupId) {
+      const oldGroup = this.challengeGroups.getById(oldGroupId);
+      if (oldGroup) {
+        this.challengeGroups.update(oldGroupId, {
+          challengeIds: oldGroup.challengeIds.filter((id) => id !== challengeId),
+        });
+      }
+    }
+
+    if (groupId) {
+      this.challengeGroups.addChallengeToGroup(groupId, challengeId);
+    }
+
+    this.persist();
+  }
+
+  createChallengeGroup(...args: Parameters<ChallengeGroupService['create']>) {
+    const result = this.challengeGroups.create(...args);
+    this.syncChallengeGroupMembership(result.challengeIds, result.id);
+    this.persist();
+    return result;
+  }
+
+  updateChallengeGroup(id: string, input: Parameters<ChallengeGroupService['update']>[1]) {
+    const result = this.challengeGroups.update(id, input);
+    if (result) {
+      this.syncChallengeGroupMembership(result.challengeIds, id);
+      this.persist();
+    }
+    return result;
+  }
+
+  async deleteChallengeGroup(id: string) {
+    const group = this.challengeGroups.getById(id);
+    if (group && isTauriApp() && group.icloudReminderHref && group.icloudReminderSourceId) {
+      const parsed = parseAppleRemindersSourceId(group.icloudReminderSourceId);
+      if (parsed) {
+        const account = this.appleRemindersAccounts.getById(parsed.accountId);
+        if (account) {
+          await AppleRemindersApi.deleteReminder(account, parsed.listGuid, group.icloudReminderHref);
+          if (group.icloudSubtaskHrefs) {
+            for (const href of Object.values(group.icloudSubtaskHrefs)) {
+              await AppleRemindersApi.deleteReminder(account, parsed.listGuid, href).catch(() => {});
+            }
+          }
+        }
+      }
+    }
+    for (const ch of this.challengeGroups.getChallengesForGroup(id)) {
+      this.challenges.update(ch.id, { groupId: undefined });
+    }
+    const result = this.challengeGroups.delete(id);
+    if (result) this.persist();
+    return result;
+  }
+
+  setActiveVisionBoard(id: string) {
+    this.visionBoards.setActiveId(id);
+    this.persist();
+  }
+
+  createVisionBoard(...args: Parameters<VisionBoardService['create']>) {
+    const result = this.visionBoards.create(...args);
+    this.persist();
+    return result;
+  }
+
+  updateVisionBoard(...args: Parameters<VisionBoardService['update']>) {
+    const result = this.visionBoards.update(...args);
+    if (result) this.persist();
+    return result;
+  }
+
+  deleteVisionBoard(id: string) {
+    const result = this.visionBoards.delete(id);
+    if (result) this.persist();
+    return result;
+  }
+
+  upsertVisionBoardElement(boardId: string, element: Parameters<VisionBoardService['upsertElement']>[1]) {
+    const result = this.visionBoards.upsertElement(boardId, element);
+    if (result) this.persist();
+    return result;
+  }
+
+  removeVisionBoardElement(boardId: string, elementId: string) {
+    const result = this.visionBoards.removeElement(boardId, elementId);
+    if (result) this.persist();
+    return result;
+  }
+
+  createVisionBoardElement(input: Parameters<VisionBoardService['createElement']>[0]) {
+    return this.visionBoards.createElement(input);
+  }
+
+  linkBucketlistToShop(
+    bucketlistId: string,
+    shopData: { price: number; enabled: boolean },
+  ): void {
+    const item = this.bucketlist.getById(bucketlistId);
+    if (!item) return;
+
+    if (!shopData.enabled) {
+      if (item.shopItemId) {
+        this.shop.delete(item.shopItemId);
+        this.bucketlist.update(bucketlistId, { shopItemId: undefined });
+      }
+      this.persist();
+      return;
+    }
+
+    const payload = {
+      title: item.title,
+      description: item.description,
+      price: shopData.price,
+      icon: item.icon,
+      color: item.color,
+      bucketlistItemId: bucketlistId,
+    };
+
+    if (item.shopItemId) {
+      this.shop.update(item.shopItemId, payload);
+    } else {
+      const created = this.shop.create(payload);
+      this.bucketlist.update(bucketlistId, { shopItemId: created.id });
+    }
     this.persist();
   }
 
@@ -712,6 +927,15 @@ export class AppStateService {
         }
       }
     }
+    const challenge = this.challenges.getById(id);
+    if (challenge?.groupId) {
+      const group = this.challengeGroups.getById(challenge.groupId);
+      if (group) {
+        this.challengeGroups.update(group.id, {
+          challengeIds: group.challengeIds.filter((cid) => cid !== id),
+        });
+      }
+    }
     const result = this.challenges.delete(id);
     this.persist();
     return result;
@@ -729,7 +953,32 @@ export class AppStateService {
     this.persist();
 
     if (!this.suppressICloudPush) {
-      await this.syncChallengeReminderInICloud(challengeId, true);
+      void this.syncChallengeReminderInICloud(challengeId, true).catch(() => {
+        // iCloud-Sync darf UI nicht blockieren
+      });
+    }
+
+    return completion;
+  }
+
+  async completeLinkedEventChallenge(eventId: string, date: string) {
+    const event = this.calendar.getById(eventId);
+    if (!event?.linkedChallengeId) return null;
+    const completionDate = event.date ?? date;
+    const completion = this.challenges.completeFromSync(event.linkedChallengeId, completionDate);
+    if (!completion) return null;
+    const challenge = this.challenges.getById(event.linkedChallengeId);
+    this.coins.earn(
+      completion.coinsEarned,
+      `Challenge: ${challenge?.title ?? 'Unbekannt'}`,
+      completion.id,
+    );
+    this.persist();
+
+    if (!this.suppressICloudPush) {
+      void this.syncChallengeReminderInICloud(event.linkedChallengeId, true).catch(() => {
+        // iCloud-Sync darf UI nicht blockieren
+      });
     }
 
     return completion;
@@ -742,7 +991,9 @@ export class AppStateService {
     this.persist();
 
     if (!this.suppressICloudPush) {
-      await this.syncChallengeReminderInICloud(challengeId, false);
+      void this.syncChallengeReminderInICloud(challengeId, false).catch(() => {
+        // iCloud-Sync darf UI nicht blockieren
+      });
     }
 
     return removed;
@@ -762,6 +1013,10 @@ export class AppStateService {
   }
 
   deleteBucketlistItem(id: string) {
+    const item = this.bucketlist.getById(id);
+    if (item?.shopItemId) {
+      this.shop.delete(item.shopItemId);
+    }
     const result = this.bucketlist.delete(id);
     this.persist();
     return result;

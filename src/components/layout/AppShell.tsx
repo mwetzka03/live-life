@@ -1,11 +1,13 @@
-import { NavLink } from 'react-router-dom';
-import { CalendarDays, Coins, ListChecks, Settings, ShoppingBag, Target } from 'lucide-react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { CalendarDays, Coins, LayoutDashboard, Settings, ShoppingBag, Target } from 'lucide-react';
 import { useLocale } from '../../i18n/LocaleProvider';
 import { useAppState } from '../../hooks/useAppState';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { balance } = useAppState();
   const { t } = useLocale();
+  const { pathname } = useLocation();
+  const isVisionboard = pathname.startsWith('/visionboard');
 
   return (
     <div className="ll-app">
@@ -27,9 +29,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Target size={18} />
             <span>{t('nav.challenges')}</span>
           </NavLink>
-          <NavLink to="/bucketlist" className={({ isActive }) => (isActive ? 'active' : '')}>
-            <ListChecks size={18} />
-            <span>{t('nav.bucketlist')}</span>
+          <NavLink to="/visionboard" className={({ isActive }) => (isActive ? 'active' : '')}>
+            <LayoutDashboard size={18} />
+            <span>{t('nav.visionboard')}</span>
           </NavLink>
           <NavLink to="/shop" className={({ isActive }) => (isActive ? 'active' : '')}>
             <ShoppingBag size={18} />
@@ -50,7 +52,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Settings size={22} />
         </NavLink>
       </header>
-      <main className="ll-main">{children}</main>
+      <main className={`ll-main${isVisionboard ? ' ll-main-full' : ''}`}>{children}</main>
     </div>
   );
 }

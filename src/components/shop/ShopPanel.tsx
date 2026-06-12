@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Coins, Edit3, ExternalLink, Gift, Plus, ShoppingBag, Trash2 } from 'lucide-react';
+import type { ShopItem } from '../../domain/models/AppData';
 import { useLocale } from '../../i18n/LocaleProvider';
 import { useAppState } from '../../hooks/useAppState';
 import { openExternalLink } from '../../lib/openExternalLink';
@@ -50,73 +51,127 @@ export function ShopPanel() {
 
       {message && <div className="ll-toast">{message}</div>}
 
-      <div className="ll-card-grid shop">
-        {items.length === 0 && (
-          <div className="ll-empty">
-            <ShoppingBag size={32} />
-            <p>{t('shop.empty')}</p>
+      {items.length === 0 && (
+        <div className="ll-empty">
+          <ShoppingBag size={32} />
+          <p>{t('shop.empty')}</p>
+        </div>
+      )}
+
+      {items.filter((i) => !i.bucketlistItemId).length > 0 && (
+        <section className="ll-shop-section">
+          <h2 className="ll-shop-section-title">{t('shop.sectionRegular')}</h2>
+          <div className="ll-card-grid shop">
+            {items
+              .filter((i) => !i.bucketlistItemId)
+              .map((item) => (
+                <ShopItemCard
+                  key={item.id}
+                  item={item}
+                  balance={balance}
+                  onPurchase={purchase}
+                  onEdit={(id) => {
+                    setEditingId(id);
+                    setModalOpen(true);
+                  }}
+                  onDelete={(id) => app.deleteShopItem(id)}
+                />
+              ))}
           </div>
-        )}
-        {items.map((item) => {
-          const canBuy = balance >= item.price;
-          return (
-            <article key={item.id} className="ll-card shop-card" style={{ borderTopColor: item.color }}>
-              <div className="ll-card-icon" style={{ background: `${item.color}22`, color: item.color }}>
-                <AppIcon name={item.icon} size={24} color={item.color} />
-              </div>
-              <div className="ll-card-body">
-                <h3>{item.title}</h3>
-                {item.description && <p>{item.description}</p>}
-                <div className="ll-price">
-                  <Coins size={16} />
-                  {t('shop.priceCoins', { price: item.price })}
-                </div>
-                {item.url && (
-                  <button
-                    type="button"
-                    className="ll-btn ghost small"
-                    onClick={() => openExternalLink(item.url!)}
-                  >
-                    <ExternalLink size={14} /> {t('shop.openLink')}
-                  </button>
-                )}
-              </div>
-              <div className="ll-card-actions column">
-                <button
-                  type="button"
-                  className={`ll-btn primary${canBuy ? '' : ' disabled'}`}
-                  disabled={!canBuy}
-                  onClick={() => purchase(item.id)}
-                >
-                  <Gift size={16} /> {t('shop.buy')}
-                </button>
-                <div className="ll-inline-actions">
-                  <button
-                    type="button"
-                    className="ll-icon-btn"
-                    onClick={() => {
-                      setEditingId(item.id);
-                      setModalOpen(true);
-                    }}
-                  >
-                    <Edit3 size={16} />
-                  </button>
-                  <button
-                    type="button"
-                    className="ll-icon-btn danger"
-                    onClick={() => app.deleteShopItem(item.id)}
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
-            </article>
-          );
-        })}
-      </div>
+        </section>
+      )}
+
+      {items.filter((i) => i.bucketlistItemId).length > 0 && (
+        <section className="ll-shop-section">
+          <h2 className="ll-shop-section-title">{t('shop.sectionBucketlist')}</h2>
+          <div className="ll-card-grid shop">
+            {items
+              .filter((i) => i.bucketlistItemId)
+              .map((item) => (
+                <ShopItemCard
+                  key={item.id}
+                  item={item}
+                  balance={balance}
+                  onPurchase={purchase}
+                  onEdit={(id) => {
+                    setEditingId(id);
+                    setModalOpen(true);
+                  }}
+                  onDelete={(id) => app.deleteShopItem(id)}
+                  fromBucketlist
+                />
+              ))}
+          </div>
+        </section>
+      )}
 
       <ShopItemModal open={modalOpen} itemId={editingId} onClose={() => setModalOpen(false)} />
     </section>
+  );
+}
+
+function ShopItemCard({
+  item,
+  balance,
+  onPurchase,
+  onEdit,
+  onDelete,
+  fromBucketlist = false,
+}: {
+  item: ShopItem;
+  balance: number;
+  onPurchase: (id: string) => void;
+  onEdit: (id: string) => void;
+  onDelete: (id: string) => void;
+  fromBucketlist?: boolean;
+}) {
+  const { t } = useLocale();
+  const canBuy = balance >= item.price;
+
+  return (
+    <article
+      key={item.id}
+      className={`ll-card shop-card${fromBucketlist ? ' shop-card-bucketlist' : ''}`}
+      style={{ borderTopColor: item.color }}
+    >
+      <div className="ll-card-icon" style={{ background: `${item.color}22`, color: item.color }}>
+        <AppIcon name={item.icon} size={24} color={item.color} />
+      </div>
+      <div className="ll-card-body">
+        <h3>{item.title}</h3>
+        {fromBucketlist && <span className="ll-shop-badge">{t('shop.fromBucketlist')}</span>}
+        {item.description && <p>{item.description}</p>}
+        <div className="ll-price">
+          <Coins size={16} />
+          {t('shop.priceCoins', { price: item.price })}
+        </div>
+        {item.url && (
+          <button type="button" className="ll-btn ghost small" onClick={() => openExternalLink(item.url!)}>
+            <ExternalLink size={14} /> {t('shop.openLink')}
+          </button>
+        )}
+      </div>
+      <div className="ll-card-actions column">
+        <button
+          type="button"
+          className={`ll-btn primary${canBuy ? '' : ' disabled'}`}
+          disabled={!canBuy}
+          onClick={() => onPurchase(item.id)}
+        >
+          <Gift size={16} /> {t('shop.buy')}
+        </button>
+        {!fromBucketlist && (
+          <div className="ll-inline-actions">
+            <button type="button" className="ll-icon-btn" onClick={() => onEdit(item.id)}>
+              <Edit3 size={16} />
+            </button>
+            <button type="button" className="ll-icon-btn danger" onClick={() => onDelete(item.id)}>
+              <Trash2 size={16} />
+            </button>
+          </div>
+        )}
+      </div>
+    </article>
   );
 }
 

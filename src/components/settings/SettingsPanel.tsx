@@ -27,6 +27,7 @@ import { useTheme, type ThemeMode } from '../../lib/theme';
 import { Modal } from '../common/Modal';
 import { DevTerminal } from '../common/DevTerminal';
 import { PageHeader, InfoTip } from '../common/InfoTip';
+import { DataManagementPanel } from './DataManagementPanel';
 import { AppleRemindersPanel } from './AppleRemindersPanel';
 
 export function SettingsPanel() {
@@ -197,25 +198,29 @@ export function SettingsPanel() {
         </article>
       )}
 
-      <article className="ll-panel ll-settings-intro">
-        <header className="ll-panel-head">
-          <Settings2 size={18} />
-          <h2>{t('settings.intro.title')}</h2>
-        </header>
-        <p className="ll-panel-desc">{t('settings.intro.desc')}</p>
-        <ul>
-          <li>
-            <strong>CalDAV</strong> {t('settings.intro.caldav')}
-          </li>
-          <li>
-            <strong>Apple Reminders ({t('common.beta')})</strong> {t('settings.intro.appleReminders')}
-          </li>
-          <li>{t('settings.intro.suggestions')}</li>
-          <li>
-            <strong>{t('common.autoSync')}</strong> {t('settings.intro.autoSync')}
-          </li>
-        </ul>
-      </article>
+      <div className="ll-settings-intro-row">
+        <article className="ll-panel ll-settings-intro">
+          <header className="ll-panel-head">
+            <Settings2 size={18} />
+            <h2>{t('settings.intro.title')}</h2>
+          </header>
+          <p className="ll-panel-desc">{t('settings.intro.desc')}</p>
+          <ul>
+            <li>
+              <strong>CalDAV</strong> {t('settings.intro.caldav')}
+            </li>
+            <li>
+              <strong>Apple Reminders ({t('common.beta')})</strong> {t('settings.intro.appleReminders')}
+            </li>
+            <li>{t('settings.intro.suggestions')}</li>
+            <li>
+              <strong>{t('common.autoSync')}</strong> {t('settings.intro.autoSync')}
+            </li>
+          </ul>
+        </article>
+
+        <DataManagementPanel />
+      </div>
 
       <div className="ll-settings-grid">
         <article className="ll-panel">
@@ -391,7 +396,7 @@ interface CalDavAccountModalProps {
   onClose: () => void;
 }
 
-function CalDavAccountModal({ open, accountId, onClose }: CalDavAccountModalProps) {
+export function CalDavAccountModal({ open, accountId, onClose }: CalDavAccountModalProps) {
   const { app } = useAppState();
   const { isLoading, runWithLoading } = useLoading();
   const { t, dict } = useLocale();

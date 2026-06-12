@@ -64,9 +64,9 @@ fn apple_reminders_fetch_all(
   config: AppleRemindersConfigDto,
   start: String,
   end: String,
-  listGuids: Vec<String>,
+  list_guids: Vec<String>,
 ) -> Result<Vec<AppleRemindersListFetchDto>, String> {
-  let guids_json = serde_json::to_string(&listGuids).map_err(|e| e.to_string())?;
+  let guids_json = serde_json::to_string(&list_guids).map_err(|e| e.to_string())?;
   icloud_reminders::fetch_all_reminders(&config, &start, &end, &guids_json)
 }
 
@@ -83,6 +83,13 @@ fn apple_reminders_set_status(config: AppleRemindersConfigDto) -> Result<String,
 #[tauri::command]
 fn apple_reminders_create(config: AppleRemindersConfigDto) -> Result<icloud_reminders::CreatedReminderDto, String> {
   icloud_reminders::create_reminder(&config)
+}
+
+#[tauri::command]
+fn apple_reminders_create_group(
+  config: AppleRemindersConfigDto,
+) -> Result<icloud_reminders::CreatedReminderGroupDto, String> {
+  icloud_reminders::create_reminder_group(&config)
 }
 
 #[tauri::command]
@@ -131,6 +138,7 @@ fn main() {
       apple_reminders_complete,
       apple_reminders_set_status,
       apple_reminders_create,
+      apple_reminders_create_group,
       apple_reminders_delete,
       apple_reminders_ensure_runtime,
     ])

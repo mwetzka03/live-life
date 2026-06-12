@@ -78,9 +78,29 @@ export interface Challenge {
   startTime?: string;
   endTime?: string;
   color: string;
+  /** Gehört zu einer Gruppen-Challenge */
+  groupId?: string;
   /** Von der App in iCloud angelegte Erinnerung */
   icloudReminderHref?: string;
   icloudReminderSourceId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Einmalige Challenge-Gruppe mit verknüpften Einzel-Challenges */
+export interface ChallengeGroup {
+  id: string;
+  title: string;
+  description?: string;
+  icon: string;
+  color: string;
+  challengeIds: string[];
+  startDate: string;
+  startTime?: string;
+  icloudReminderHref?: string;
+  icloudReminderSourceId?: string;
+  /** challengeId → iCloud-Unteraufgabe (falls angelegt) */
+  icloudSubtaskHrefs?: Record<string, string>;
   createdAt: string;
   updatedAt: string;
 }
@@ -103,6 +123,8 @@ export interface ShopItem {
   price: number;
   icon: string;
   color: string;
+  /** Verknüpft mit Bucketlist-Eintrag (Visionboard) */
+  bucketlistItemId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -164,6 +186,63 @@ export interface BucketlistItem {
   targetYear: number | null;
   completed: boolean;
   completedAt?: string;
+  /** Verknüpfter Shop-Eintrag */
+  shopItemId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type VisionBoardElementType = 'text' | 'shape' | 'image';
+
+export interface VisionBoardElement {
+  id: string;
+  type: VisionBoardElementType;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  zIndex: number;
+  content?: string;
+  fontSize?: number;
+  fontWeight?: string;
+  fontStyle?: 'normal' | 'italic';
+  textDecoration?: 'none' | 'underline';
+  color?: string;
+  shape?: 'rect' | 'circle' | 'line';
+  fill?: string;
+  /** 0–100 */
+  fillOpacity?: number;
+  stroke?: string;
+  strokeWidth?: number;
+  /** Zentrierter Text in Formen */
+  labelText?: string;
+  src?: string;
+  /** Unzugeschnittenes Original – für „Zuschnitt zurücksetzen“ */
+  originalSrc?: string;
+  originalX?: number;
+  originalY?: number;
+  originalWidth?: number;
+  originalHeight?: number;
+  originalImageSourceWidth?: number;
+  originalImageSourceHeight?: number;
+  /** Anzeigegröße des Bildes im Rahmen */
+  imageSourceWidth?: number;
+  imageSourceHeight?: number;
+  /** Rand-Einrückungen 0–1 (links, oben, rechts, unten) */
+  imageCrop?: { left: number; top: number; right: number; bottom: number };
+}
+
+export interface VisionBoard {
+  id: string;
+  name: string;
+  backgroundColor: string;
+  /** 0–100 */
+  backgroundOpacity: number;
+  zoom: number;
+  panX: number;
+  panY: number;
+  elements: VisionBoardElement[];
   createdAt: string;
   updatedAt: string;
 }
@@ -172,6 +251,7 @@ export interface AppData {
   version: number;
   events: CalendarEvent[];
   challenges: Challenge[];
+  challengeGroups: ChallengeGroup[];
   completions: ChallengeCompletion[];
   eventRewardClaims: EventRewardClaim[];
   shopItems: ShopItem[];
@@ -180,12 +260,15 @@ export interface AppData {
   calDavAccounts: CalDavAccount[];
   appleRemindersAccounts: AppleRemindersAccount[];
   bucketlistItems: BucketlistItem[];
+  visionBoards: VisionBoard[];
+  activeVisionBoardId?: string;
 }
 
 export const EMPTY_APP_DATA: AppData = {
-  version: 2,
+  version: 3,
   events: [],
   challenges: [],
+  challengeGroups: [],
   completions: [],
   eventRewardClaims: [],
   shopItems: [],
@@ -194,4 +277,5 @@ export const EMPTY_APP_DATA: AppData = {
   calDavAccounts: [],
   appleRemindersAccounts: [],
   bucketlistItems: [],
+  visionBoards: [],
 };

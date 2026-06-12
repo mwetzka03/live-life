@@ -242,7 +242,7 @@ interface AppleRemindersAccountModalProps {
   onClose: () => void;
 }
 
-function AppleRemindersAccountModal({ open, accountId, onClose }: AppleRemindersAccountModalProps) {
+export function AppleRemindersAccountModal({ open, accountId, onClose }: AppleRemindersAccountModalProps) {
   const { app } = useAppState();
   const { t } = useLocale();
   const { isLoading, runWithLoading } = useLoading();

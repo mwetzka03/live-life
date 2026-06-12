@@ -650,26 +650,6 @@ def parse_due_datetime(date_str: str | None, time_str: str | None) -> datetime |
     return local.astimezone(timezone.utc)
 
 
-def cmd_delete_reminder(args) -> None:
-    if not args.reminder_href:
-        fail("MISSING_REMINDER", "reminder_href fehlt.")
-
-    api = connect_logged_in(
-        args.apple_id,
-        args.password,
-        args.cookie_dir,
-        args.two_factor_code or None,
-    )
-    service = ensure_reminders(api)
-    reminder = find_reminder_for_status(
-        service,
-        args.reminder_href,
-        args.list_guid or None,
-    )
-    service.delete(reminder)
-    emit({"ok": True, "message": "Erinnerung in iCloud gelöscht."})
-
-
 def cmd_create_reminder(args) -> None:
     if not args.list_guid:
         fail("MISSING_LIST", "list_guid fehlt.")
@@ -713,6 +693,111 @@ def cmd_create_reminder(args) -> None:
     })
 
 
+def create_single_reminder(service, list_id, title, description, due_date):
+    try:
+        created = service.create(
+            list_id,
+            title.strip(),
+            (description or "").strip(),
+            due_date=due_date,
+        )
+    except TypeError:
+        created = service.create(
+            list_id=list_id,
+            title=title.strip(),
+            desc=(description or "").strip(),
+            due_date=due_date,
+        )
+    reminder_id = str(getattr(created, "id", created))
+    uid = reminder_id.split("/", 1)[-1] if reminder_id else title.strip()
+    return {"uid": uid, "href": reminder_id, "title": title.strip()}
+
+
+def cmd_create_reminder_group(args) -> None:
+    if not args.list_guid:
+        fail("MISSING_LIST", "list_guid fehlt.")
+    if not args.title or not args.title.strip():
+        fail("MISSING_TITLE", "title fehlt.")
+
+    try:
+        subtasks_raw = json.loads(args.subtasks or "[]")
+    except json.JSONDecodeError:
+        fail("INVALID_SUBTASKS", "subtasks muss gültiges JSON sein.")
+
+    api = connect_logged_in(
+        args.apple_id,
+        args.password,
+        args.cookie_dir,
+        args.two_factor_code or None,
+    )
+    service = ensure_reminders(api)
+    list_id = normalize_list_id(args.list_guid)
+    due_date = parse_due_datetime(args.due_date or None, args.due_time or None)
+
+    subtask_lines = []
+    for item in subtasks_raw:
+        if isinstance(item, dict) and item.get("title"):
+            subtask_lines.append(f"☐ {item['title'].strip()}")
+
+    desc_parts = []
+    if (args.description or "").strip():
+        desc_parts.append(args.description.strip())
+    if subtask_lines:
+        desc_parts.append("Unteraufgaben:\n" + "\n".join(subtask_lines))
+    combined_desc = "\n\n".join(desc_parts)
+
+    parent = create_single_reminder(
+        service,
+        list_id,
+        args.title.strip(),
+        combined_desc,
+        due_date,
+    )
+
+    subtask_hrefs = {}
+    for item in subtasks_raw:
+        if not isinstance(item, dict):
+            continue
+        key = str(item.get("key", "")).strip()
+        title = str(item.get("title", "")).strip()
+        if not key or not title:
+            continue
+        child = create_single_reminder(
+            service,
+            list_id,
+            f"↳ {title}",
+            f"Teil von: {args.title.strip()}",
+            due_date,
+        )
+        subtask_hrefs[key] = child["href"]
+
+    emit({
+        "ok": True,
+        "reminder": parent,
+        "subtaskHrefs": subtask_hrefs,
+    })
+
+
+def cmd_delete_reminder(args) -> None:
+    if not args.reminder_href:
+        fail("MISSING_REMINDER", "reminder_href fehlt.")
+
+    api = connect_logged_in(
+        args.apple_id,
+        args.password,
+        args.cookie_dir,
+        args.two_factor_code or None,
+    )
+    service = ensure_reminders(api)
+    reminder = find_reminder_for_status(
+        service,
+        args.reminder_href,
+        args.list_guid or None,
+    )
+    service.delete(reminder)
+    emit({"ok": True, "message": "Erinnerung in iCloud gelöscht."})
+
+
 def run_command(args) -> None:
     if args.command == "test":
         cmd_test(args)
@@ -732,13 +817,15 @@ def run_command(args) -> None:
         cmd_set_reminder_status(args)
     elif args.command == "create-reminder":
         cmd_create_reminder(args)
+    elif args.command == "create-reminder-group":
+        cmd_create_reminder_group(args)
     elif args.command == "delete-reminder":
         cmd_delete_reminder(args)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", choices=["test", "prepare", "complete", "discover", "fetch", "fetch-all", "complete-reminder", "set-reminder-status", "create-reminder", "delete-reminder"])
+    parser.add_argument("command", choices=["test", "prepare", "complete", "discover", "fetch", "fetch-all", "complete-reminder", "set-reminder-status", "create-reminder", "create-reminder-group", "delete-reminder"])
     parser.add_argument("--apple-id", required=True)
     parser.add_argument("--password", required=True)
     parser.add_argument("--two-factor-code", default="")
@@ -753,6 +840,7 @@ def main() -> None:
     parser.add_argument("--description", default="")
     parser.add_argument("--due-date", default="")
     parser.add_argument("--due-time", default="")
+    parser.add_argument("--subtasks", default="")
     args = parser.parse_args()
 
     try:
