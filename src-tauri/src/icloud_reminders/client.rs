@@ -256,8 +256,11 @@ pub struct AppleRemindersListFetchDto {
 fn run_bridge(command: &str, config: &AppleRemindersConfigDto) -> Result<BridgeResponse, String> {
   let script = bridge_script_path();
   if !script.is_file() {
+    let exe = std::env::current_exe()
+      .map(|p| p.display().to_string())
+      .unwrap_or_else(|_| "?".into());
     return Err(format!(
-      "Bridge-Skript nicht gefunden: {}. Bitte App neu installieren (Release mit gebündelten Skripten).",
+      "Bridge-Skript nicht gefunden: {}. App-Pfad: {exe}. Bitte App neu installieren (Release mit gebündelten Skripten).",
       script.display()
     ));
   }

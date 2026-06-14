@@ -2,11 +2,19 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::{Mutex, OnceLock};
 
+use tauri::path::BaseDirectory;
+use tauri::{AppHandle, Manager};
+
 static SCRIPTS_DIR: OnceLock<PathBuf> = OnceLock::new();
+static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
 static SETUP_ONCE: Mutex<Option<bool>> = Mutex::new(None);
 
+pub fn set_app_handle(handle: AppHandle) {
+  let _ = APP_HANDLE.set(handle);
+}
+
 pub fn init_scripts_dir(dir: PathBuf) {
-  if dir.join("apple_reminders_bridge.py").is_file() {
+  if has_bridge(&dir) {
     let _ = SCRIPTS_DIR.set(dir);
   }
 }
@@ -15,19 +23,54 @@ fn has_bridge(dir: &Path) -> bool {
   dir.join("apple_reminders_bridge.py").is_file()
 }
 
+fn candidates_from(base: &Path) -> [PathBuf; 6] {
+  [
+    base.join("resources").join("scripts"),
+    base.join("_up_").join("resources").join("scripts"),
+    base.join("_up_").join("scripts"),
+    base.join("resources"),
+    base.join("scripts"),
+    base.join("_up_").join("resources"),
+  ]
+}
+
+fn first_with_bridge(candidates: impl IntoIterator<Item = PathBuf>) -> Option<PathBuf> {
+  candidates.into_iter().find(|dir| has_bridge(dir))
+}
+
+fn resolve_from_app_handle() -> Option<PathBuf> {
+  let app = APP_HANDLE.get()?;
+
+  if let Ok(script) = app
+    .path()
+    .resolve("scripts/apple_reminders_bridge.py", BaseDirectory::Resource)
+  {
+    if script.is_file() {
+      return script.parent().map(|p| p.to_path_buf());
+    }
+  }
+
+  if let Ok(resource_dir) = app.path().resource_dir() {
+    if let Some(dir) = first_with_bridge(candidates_from(&resource_dir)) {
+      return Some(dir);
+    }
+    if let Some(parent) = resource_dir.parent() {
+      if let Some(dir) = first_with_bridge(candidates_from(parent)) {
+        return Some(dir);
+      }
+    }
+  }
+
+  None
+}
+
 fn discover_scripts_dir() -> Option<PathBuf> {
   let exe = std::env::current_exe().ok()?;
   let mut dir = exe.parent()?.to_path_buf();
 
-  for _ in 0..8 {
-    for candidate in [
-      dir.join("resources").join("scripts"),
-      dir.join("resources"),
-      dir.join("scripts"),
-    ] {
-      if has_bridge(&candidate) {
-        return Some(candidate);
-      }
+  for _ in 0..10 {
+    if let Some(found) = first_with_bridge(candidates_from(&dir)) {
+      return Some(found);
     }
     if !dir.pop() {
       break;
@@ -37,24 +80,41 @@ fn discover_scripts_dir() -> Option<PathBuf> {
   None
 }
 
-pub fn scripts_dir() -> PathBuf {
+fn resolve_scripts_dir() -> Option<PathBuf> {
+  resolve_from_app_handle().or_else(discover_scripts_dir)
+}
+
+fn ensure_scripts_dir_cached() -> PathBuf {
   if let Some(dir) = SCRIPTS_DIR.get() {
     return dir.clone();
   }
-  if let Some(dir) = discover_scripts_dir() {
+  if let Some(dir) = resolve_scripts_dir() {
     let _ = SCRIPTS_DIR.set(dir.clone());
     return dir;
   }
 
   #[cfg(debug_assertions)]
   {
-    return PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../scripts");
+    let dev = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../scripts");
+    if has_bridge(&dev) {
+      let _ = SCRIPTS_DIR.set(dev.clone());
+      return dev;
+    }
   }
 
   #[cfg(not(debug_assertions))]
   {
-    PathBuf::from("scripts")
+    if let Some(dir) = discover_scripts_dir() {
+      let _ = SCRIPTS_DIR.set(dir.clone());
+      return dir;
+    }
   }
+
+  PathBuf::from("scripts")
+}
+
+pub fn scripts_dir() -> PathBuf {
+  ensure_scripts_dir_cached()
 }
 
 pub fn bridge_script_path() -> PathBuf {
@@ -115,6 +175,8 @@ fn run_hidden_powershell(_script: &Path) -> Result<std::process::Output, String>
 }
 
 pub fn ensure_reminders_runtime() -> Result<String, String> {
+  let _ = ensure_scripts_dir_cached();
+
   if pyicloud_ready() {
     return Ok("Apple Reminders Python-Runtime bereit.".into());
   }
@@ -132,8 +194,11 @@ pub fn ensure_reminders_runtime() -> Result<String, String> {
 
   let script = install_script_path();
   if !script.is_file() {
+    let exe = std::env::current_exe()
+      .map(|p| p.display().to_string())
+      .unwrap_or_else(|_| "?".into());
     return Err(format!(
-      "Setup-Skript nicht gefunden: {}. Bitte App neu installieren.",
+      "Setup-Skript nicht gefunden: {}. App-Pfad: {exe}. Bitte App neu installieren.",
       script.display()
     ));
   }

@@ -4,7 +4,10 @@ mod caldav;
 mod icloud_reminders;
 mod models;
 
-use icloud_reminders::{AppleRemindersConfigDto, AppleRemindersListDto, AppleRemindersListFetchDto, init_scripts_dir};
+use icloud_reminders::{
+  AppleRemindersConfigDto, AppleRemindersListDto, AppleRemindersListFetchDto, init_scripts_dir,
+  set_app_handle,
+};
 use models::{CalDavCalendarDto, CalDavConfigDto, CalDavDeleteEventDto, SyncedEventDto};
 use tauri::Manager;
 use tauri::image::Image;
@@ -113,6 +116,8 @@ fn apple_reminders_ensure_runtime() -> Result<String, String> {
 fn main() {
   tauri::Builder::default()
     .setup(|app| {
+      set_app_handle(app.handle().clone());
+
       if let Ok(script) = app
         .path()
         .resolve("scripts/apple_reminders_bridge.py", BaseDirectory::Resource)
@@ -121,9 +126,14 @@ fn main() {
           init_scripts_dir(parent.to_path_buf());
         }
       } else if let Ok(resource_dir) = app.path().resource_dir() {
-        let scripts = resource_dir.join("scripts");
-        if scripts.join("apple_reminders_bridge.py").is_file() {
-          init_scripts_dir(scripts);
+        for candidate in [
+          resource_dir.join("scripts"),
+          resource_dir.clone(),
+        ] {
+          if candidate.join("apple_reminders_bridge.py").is_file() {
+            init_scripts_dir(candidate);
+            break;
+          }
         }
       }
 

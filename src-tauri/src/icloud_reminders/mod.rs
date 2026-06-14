@@ -7,4 +7,4 @@ pub use client::{
   AppleRemindersConfigDto, AppleRemindersFetchResultDto, AppleRemindersListDto,
   AppleRemindersListFetchDto, CreatedReminderDto, CreatedReminderGroupDto,
 };
-pub use runtime::{ensure_reminders_runtime, init_scripts_dir};
+pub use runtime::{ensure_reminders_runtime, init_scripts_dir, set_app_handle};
