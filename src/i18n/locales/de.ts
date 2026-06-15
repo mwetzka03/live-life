@@ -163,6 +163,9 @@ export const de = {
       category: 'Kategorie',
       recurrence: 'Wiederholung',
       createAssign: 'Anlegen & zuweisen',
+      group: 'Gruppen-Challenge',
+      assignGroup: 'Gruppe zuweisen',
+      groupLinked: 'Mit Gruppen-Challenge verknüpft',
     },
     shopAssign: {
       title: 'Shop-Belohnung zuweisen',
@@ -260,7 +263,7 @@ export const de = {
       createNew: 'Neue Einzel-Challenge',
       appleReminder: 'Apple-Erinnerung mit Unteraufgaben (optional)',
       icloudSubtasksHint:
-        'Erstellt eine Haupt-Erinnerung mit Checkliste in der Notiz sowie separate Unter-Erinnerungen pro Challenge.',
+        'Erstellt für jeden Gruppen-Eintrag eine eigene Apple-Erinnerung mit eigenen Münzen – kein Sammel-Reminder.',
       linkToGroup: 'Gruppen-Challenge (optional)',
     },
   },
@@ -348,7 +351,10 @@ export const de = {
       rect: 'Rechteck',
       circle: 'Kreis',
       image: 'Bild',
+      arrowStraight: 'Gerader Pfeil',
+      arrowCurved: 'Runder Pfeil',
     },
+    arrowDraftHint: 'Klicke Start- und Endpunkt (optional an Elementen andocken)',
     inspector: {
       fontSize: 'Schriftgröße',
       color: 'Textfarbe',
@@ -367,6 +373,12 @@ export const de = {
       underline: 'Unterstrichen',
       removeLabel: 'Text entfernen',
     },
+  },
+
+  errors: {
+    context: 'Kontext',
+    actionFlow: 'Ablauf',
+    exportReport: 'Fehlerbericht herunterladen',
   },
 
   settings: {

@@ -53,6 +53,7 @@ export interface CalendarEvent {
   syncSourceId?: string;
   readOnly?: boolean;
   linkedChallengeId?: string;
+  linkedGroupId?: string;
   linkedShopItemId?: string;
   syncKind?: SyncKind;
   reminderDismissed?: boolean;
@@ -193,7 +194,10 @@ export interface BucketlistItem {
   updatedAt: string;
 }
 
-export type VisionBoardElementType = 'text' | 'shape' | 'image';
+export type VisionBoardElementType = 'text' | 'shape' | 'image' | 'connector';
+
+export type VisionBoardAnchor = 'n' | 's' | 'e' | 'w' | 'center';
+export type VisionBoardArrowStyle = 'straight' | 'curved';
 
 export interface VisionBoardElement {
   id: string;
@@ -232,6 +236,15 @@ export interface VisionBoardElement {
   imageSourceHeight?: number;
   /** Rand-Einrückungen 0–1 (links, oben, rechts, unten) */
   imageCrop?: { left: number; top: number; right: number; bottom: number };
+  /** Connector / arrow */
+  connectorStyle?: VisionBoardArrowStyle;
+  connectorFromId?: string;
+  connectorToId?: string;
+  fromAnchor?: VisionBoardAnchor;
+  toAnchor?: VisionBoardAnchor;
+  /** Free endpoint when not docked to an element */
+  endX?: number;
+  endY?: number;
 }
 
 export interface VisionBoard {

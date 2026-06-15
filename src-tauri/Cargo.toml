@@ -1,6 +1,6 @@
 [package]
 name = "live-life"
-version = "0.2.2"
+version = "0.2.3"
 description = "Live Life"
 authors = ["you"]
 edition = "2021"

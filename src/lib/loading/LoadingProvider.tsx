@@ -14,6 +14,7 @@ import { translate } from '../../i18n/translate';
 import { LOCALE_STORAGE_KEY, type Locale } from '../../i18n/types';
 import { useDeveloperMode } from '../developerMode';
 import { devLog } from '../startupDevLog';
+import { showErrorReport } from '../errorReport';
 import { yieldToUi } from './yieldToUi';
 
 function defaultLoadingLabel(): string {
@@ -81,6 +82,12 @@ export function LoadingProvider({ children }: { children: ReactNode }) {
           'error',
           'Loading',
         );
+        showErrorReport({
+          title: label,
+          error,
+          context: 'LoadingProvider.runWithLoading',
+          actionFlow: [`User action: ${label}`, 'Loading overlay shown', 'Async operation failed'],
+        });
         throw error;
       } finally {
         hideLoading();

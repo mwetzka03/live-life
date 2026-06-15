@@ -36,6 +36,8 @@ function toConfig(
     dueDate?: string;
     dueTime?: string;
     subtasks?: string;
+    isRecurring?: boolean;
+    completionDate?: string;
   },
 ) {
   return {
@@ -51,6 +53,8 @@ function toConfig(
     dueDate: extras?.dueDate,
     dueTime: extras?.dueTime,
     subtasks: extras?.subtasks,
+    isRecurring: extras?.isRecurring === undefined ? undefined : extras.isRecurring ? 'true' : 'false',
+    completionDate: extras?.completionDate,
   };
 }
 
@@ -228,10 +232,17 @@ export class AppleRemindersApi {
     listGuid: string,
     reminderHref: string,
     completed: boolean,
+    options?: { isRecurring?: boolean; completionDate?: string },
   ): Promise<void> {
     AppleRemindersApi.ensureDesktop();
     await invoke('apple_reminders_set_status', {
-      config: toConfig(account, { listGuid, reminderHref, completed }),
+      config: toConfig(account, {
+        listGuid,
+        reminderHref,
+        completed,
+        isRecurring: options?.isRecurring,
+        completionDate: options?.completionDate,
+      }),
     });
   }
 

@@ -163,6 +163,9 @@ export const en = {
       category: 'Category',
       recurrence: 'Recurrence',
       createAssign: 'Create & assign',
+      group: 'Group challenge',
+      assignGroup: 'Assign group',
+      groupLinked: 'Linked to group challenge',
     },
     shopAssign: {
       title: 'Assign shop reward',
@@ -260,7 +263,7 @@ export const en = {
       createNew: 'New individual challenge',
       appleReminder: 'Apple reminder with subtasks (optional)',
       icloudSubtasksHint:
-        'Creates a main reminder with a checklist in the note plus separate sub-reminders per challenge.',
+        'Creates a separate Apple Reminder for each group entry with its own coins – no combined parent reminder.',
       linkToGroup: 'Group challenge (optional)',
     },
   },
@@ -348,7 +351,10 @@ export const en = {
       rect: 'Rectangle',
       circle: 'Circle',
       image: 'Image',
+      arrowStraight: 'Straight arrow',
+      arrowCurved: 'Curved arrow',
     },
+    arrowDraftHint: 'Click start and end point (optionally snap to elements)',
     inspector: {
       fontSize: 'Font size',
       color: 'Text color',
@@ -367,6 +373,12 @@ export const en = {
       underline: 'Underline',
       removeLabel: 'Remove label',
     },
+  },
+
+  errors: {
+    context: 'Context',
+    actionFlow: 'Action flow',
+    exportReport: 'Download error report',
   },
 
   settings: {

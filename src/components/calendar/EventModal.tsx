@@ -138,19 +138,20 @@ export function EventModal({ open, eventId, defaultDate, onClose }: EventModalPr
           <p className="ll-form-hint ll-recurring-badge">{t('calendar.eventModal.reminderHint')}</p>
         )}
 
-        {eventId && !existing?.linkedShopItemId && existing?.readOnly && existing?.syncKind !== 'reminder' && (
+        {eventId && !existing?.linkedShopItemId && existing?.readOnly && (
           <EventChallengeAssign
             eventId={eventId}
             eventDate={date}
             eventTitle={title}
             linkedChallengeId={existing?.linkedChallengeId}
+            linkedGroupId={existing?.linkedGroupId}
             isRecurring={existing?.isRecurring}
             recurrence={existing?.recurrence}
             weeklyDays={existing?.weeklyDays}
           />
         )}
 
-        {eventId && !existing?.linkedChallengeId && (
+        {eventId && !existing?.linkedChallengeId && !existing?.linkedGroupId && (
           <EventShopAssign
             eventId={eventId}
             eventTitle={title}

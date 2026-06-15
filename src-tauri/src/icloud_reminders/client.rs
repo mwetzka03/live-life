@@ -38,6 +38,10 @@ pub struct AppleRemindersConfigDto {
   pub due_time: Option<String>,
   #[serde(default)]
   pub subtasks: Option<String>,
+  #[serde(default)]
+  pub is_recurring: Option<String>,
+  #[serde(default)]
+  pub completion_date: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, serde::Serialize)]
@@ -191,6 +195,16 @@ fn run_python(
   if let Some(subtasks) = &config.subtasks {
     if !subtasks.trim().is_empty() {
       cmd.arg("--subtasks").arg(subtasks);
+    }
+  }
+  if let Some(is_recurring) = &config.is_recurring {
+    if !is_recurring.trim().is_empty() {
+      cmd.arg("--is-recurring").arg(is_recurring);
+    }
+  }
+  if let Some(completion_date) = &config.completion_date {
+    if !completion_date.trim().is_empty() {
+      cmd.arg("--completion-date").arg(completion_date);
     }
   }
 

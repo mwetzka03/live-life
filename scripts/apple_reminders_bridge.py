@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -584,11 +584,118 @@ def update_reminder_status_only(service, reminder, completed: bool) -> None:
     )
 
 
+def update_reminder_due_date(service, reminder, due_utc: datetime, completed: bool) -> None:
+    """Due date and completion for recurring instance advance."""
+    import time
+
+    from pyicloud.services.reminders._protocol import _generate_resolution_token_map
+
+    reminder_id = normalize_reminder_id(str(reminder.id))
+    try:
+        fresh = service.get(reminder_id)
+        reminder.record_change_tag = fresh.record_change_tag
+    except Exception:  # noqa: BLE001
+        pass
+
+    writes = service._writes
+    reminder_record_name = writes._reminder_record_name(reminder.id)
+    now_ms = int(time.time() * 1000)
+    due_ms = int(due_utc.timestamp() * 1000)
+    completion_date_ms = now_ms if completed else None
+
+    fields_mod = ["completed", "completionDate", "dueDate", "lastModifiedDate"]
+    fields = {
+        "Completed": {"type": "INT64", "value": 1 if completed else 0},
+        "CompletionDate": {"type": "TIMESTAMP", "value": completion_date_ms},
+        "DueDate": {"type": "TIMESTAMP", "value": due_ms},
+        "LastModifiedDate": {"type": "TIMESTAMP", "value": now_ms},
+        "ResolutionTokenMap": {"type": "STRING", "value": _generate_resolution_token_map(fields_mod)},
+    }
+
+    writes._submit_single_record_update(
+        operation_name="Update reminder due date",
+        record_name=reminder_record_name,
+        record_type="Reminder",
+        record_change_tag=reminder.record_change_tag,
+        fields=fields,
+        model_obj=reminder,
+    )
+    reminder.completed = completed
+    reminder.due_date = due_utc
+
+
+def compute_next_occurrence(
+    service,
+    reminder,
+    rule_cache: dict[str, tuple[bool, str | None]],
+    reference: date,
+) -> date | None:
+    is_recurring, recurrence = recurrence_from_reminder(service, reminder, rule_cache)
+    if not is_recurring:
+        return None
+
+    due_raw = reminder.due_date or reminder.start_date
+    if due_raw:
+        local_due = to_local_datetime(due_raw, reminder.time_zone).date()
+    else:
+        local_due = reference
+
+    if recurrence == "daily":
+        next_date = local_due if local_due > reference else reference
+        return next_date + timedelta(days=1)
+    if recurrence == "weekly":
+        next_date = local_due if local_due > reference else reference
+        return next_date + timedelta(days=7)
+    if recurrence == "monthly":
+        month = local_due.month + 1 if local_due > reference else reference.month + 1
+        year = local_due.year if local_due > reference else reference.year
+        if month > 12:
+            month = 1
+            year += 1
+        day = min(local_due.day, 28)
+        return date(year, month, day)
+    return reference + timedelta(days=1)
+
+
+def complete_recurring_instance(service, reminder, completion_date: date) -> None:
+    """Mark today's occurrence complete in iCloud without ending the series."""
+    rule_cache: dict[str, tuple[bool, str | None]] = {}
+    update_reminder_status_only(service, reminder, True)
+
+    fresh = find_reminder_for_status(service, str(reminder.id), None)
+    next_due = compute_next_occurrence(service, fresh, rule_cache, completion_date)
+    if not next_due:
+        return
+
+    local_dt = datetime(
+        next_due.year,
+        next_due.month,
+        next_due.day,
+        9,
+        0,
+        tzinfo=DEFAULT_TZ,
+    )
+    if not fresh.all_day and fresh.due_date:
+        prev = to_local_datetime(fresh.due_date, fresh.time_zone)
+        local_dt = datetime(
+            next_due.year,
+            next_due.month,
+            next_due.day,
+            prev.hour,
+            prev.minute,
+            tzinfo=DEFAULT_TZ,
+        )
+
+    update_reminder_due_date(service, fresh, local_dt.astimezone(timezone.utc), False)
+
+
 def cmd_set_reminder_status(args) -> None:
     if not args.reminder_href:
         fail("MISSING_REMINDER", "reminder_href fehlt.")
 
     completed = (args.completed or "true").strip().lower() in ("true", "1", "yes")
+    is_recurring = (args.is_recurring or "").strip().lower() in ("true", "1", "yes")
+    completion_date = parse_iso_date(args.completion_date) if getattr(args, "completion_date", None) else date.today()
 
     api = connect_logged_in(
         args.apple_id,
@@ -602,20 +709,26 @@ def cmd_set_reminder_status(args) -> None:
         args.reminder_href,
         args.list_guid or None,
     )
-    update_reminder_status_only(service, reminder, completed)
+
+    if completed and is_recurring:
+        complete_recurring_instance(service, reminder, completion_date)
+    else:
+        update_reminder_status_only(service, reminder, completed)
 
     fresh = find_reminder_for_status(
         service,
         args.reminder_href,
         args.list_guid or None,
     )
-    if fresh.completed != completed:
+    if not is_recurring and fresh.completed != completed:
         fail(
             "STATUS_MISMATCH",
             "Erinnerungsstatus konnte in iCloud nicht aktualisiert werden.",
         )
 
-    message = "Erinnerung in iCloud abgehakt." if completed else "Erinnerung in iCloud wieder geöffnet."
+    message = "Erinnerungs-Instanz in iCloud abgehakt." if completed and is_recurring else (
+        "Erinnerung in iCloud abgehakt." if completed else "Erinnerung in iCloud wieder geöffnet."
+    )
     emit({"ok": True, "message": message})
 
 
@@ -734,27 +847,8 @@ def cmd_create_reminder_group(args) -> None:
     list_id = normalize_list_id(args.list_guid)
     due_date = parse_due_datetime(args.due_date or None, args.due_time or None)
 
-    subtask_lines = []
-    for item in subtasks_raw:
-        if isinstance(item, dict) and item.get("title"):
-            subtask_lines.append(f"☐ {item['title'].strip()}")
-
-    desc_parts = []
-    if (args.description or "").strip():
-        desc_parts.append(args.description.strip())
-    if subtask_lines:
-        desc_parts.append("Unteraufgaben:\n" + "\n".join(subtask_lines))
-    combined_desc = "\n\n".join(desc_parts)
-
-    parent = create_single_reminder(
-        service,
-        list_id,
-        args.title.strip(),
-        combined_desc,
-        due_date,
-    )
-
     subtask_hrefs = {}
+    group_prefix = f"[{args.title.strip()}] "
     for item in subtasks_raw:
         if not isinstance(item, dict):
             continue
@@ -765,15 +859,20 @@ def cmd_create_reminder_group(args) -> None:
         child = create_single_reminder(
             service,
             list_id,
-            f"↳ {title}",
-            f"Teil von: {args.title.strip()}",
+            f"{group_prefix}{title}",
+            f"Gruppe: {args.title.strip()}",
             due_date,
         )
         subtask_hrefs[key] = child["href"]
 
+    if not subtask_hrefs:
+        fail("MISSING_SUBTASKS", "Keine gültigen Gruppen-Einträge.")
+
+    first_key = next(iter(subtask_hrefs))
+    first_href = subtask_hrefs[first_key]
     emit({
         "ok": True,
-        "reminder": parent,
+        "reminder": {"uid": first_key, "href": first_href, "title": args.title.strip()},
         "subtaskHrefs": subtask_hrefs,
     })
 
@@ -841,6 +940,8 @@ def main() -> None:
     parser.add_argument("--due-date", default="")
     parser.add_argument("--due-time", default="")
     parser.add_argument("--subtasks", default="")
+    parser.add_argument("--is-recurring", default="")
+    parser.add_argument("--completion-date", default="")
     args = parser.parse_args()
 
     try:

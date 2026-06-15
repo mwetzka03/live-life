@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link2, Plus, Repeat, Unlink } from 'lucide-react';
+import { Link2, Plus, Repeat, Unlink, Users } from 'lucide-react';
 import type { ChallengeCategory, RecurrenceType } from '../../domain/models/AppData';
 import { DateUtils } from '../../domain/services/DateUtils';
 import { useLocale } from '../../i18n/LocaleProvider';
@@ -12,6 +12,7 @@ interface EventChallengeAssignProps {
   eventDate: string;
   eventTitle: string;
   linkedChallengeId?: string;
+  linkedGroupId?: string;
   isRecurring?: boolean;
   recurrence?: RecurrenceType;
   weeklyDays?: number[];
@@ -22,6 +23,7 @@ export function EventChallengeAssign({
   eventDate,
   eventTitle,
   linkedChallengeId,
+  linkedGroupId,
   isRecurring,
   recurrence,
   weeklyDays,
@@ -39,8 +41,13 @@ export function EventChallengeAssign({
   );
   const [showCreate, setShowCreate] = useState(false);
 
+  const [selectedGroupId, setSelectedGroupId] = useState('');
+
   const linked = linkedChallengeId ? app.challenges.getById(linkedChallengeId) : undefined;
+  const linkedGroup = linkedGroupId ? app.challengeGroups.getById(linkedGroupId) : undefined;
   const linkedCompleted = linked ? app.challenges.isCompletedOn(linked.id, eventDate) : false;
+
+  const assignableGroups = app.challengeGroups.getAll();
 
   const assignable = app.challenges
     .getAll()
@@ -78,6 +85,18 @@ export function EventChallengeAssign({
     app.unlinkEventFromChallenge(eventId);
   };
 
+  const unlinkGroup = () => {
+    app.unlinkEventFromGroup(eventId);
+  };
+
+  const assignGroup = () => {
+    if (!selectedGroupId) return;
+    void runWithLoading(async () => {
+      app.assignEventToGroup(eventId, selectedGroupId);
+      setSelectedGroupId('');
+    }, t('loading.challengeAssign'));
+  };
+
   return (
     <div className="ll-event-challenge-assign">
       <h3>
@@ -93,6 +112,19 @@ export function EventChallengeAssign({
         {t('calendar.challengeAssign.hint')}
         {isRecurring && t('calendar.challengeAssign.recurringHint')}
       </p>
+
+      {linkedGroup && (
+        <div className="ll-linked-challenge">
+          <Users size={18} aria-hidden />
+          <div>
+            <strong>{linkedGroup.title}</strong>
+            <span className="ll-form-hint">{t('calendar.challengeAssign.groupLinked')}</span>
+          </div>
+          <button type="button" className="ll-btn small ghost" onClick={unlinkGroup}>
+            <Unlink size={14} /> {t('calendar.challengeAssign.remove')}
+          </button>
+        </div>
+      )}
 
       {linked && (
         <div className="ll-linked-challenge">
@@ -114,8 +146,32 @@ export function EventChallengeAssign({
         </div>
       )}
 
-      {!linked && (
+      {!linked && !linkedGroup && (
         <>
+          {assignableGroups.length > 0 && (
+            <div className="ll-event-assign-row">
+              <label className="ll-form-grow">
+                {t('calendar.challengeAssign.group')}
+                <select value={selectedGroupId} onChange={(e) => setSelectedGroupId(e.target.value)}>
+                  <option value="">{t('common.selectPlaceholder')}</option>
+                  {assignableGroups.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                className="ll-btn small primary ll-event-assign-btn"
+                disabled={!selectedGroupId}
+                onClick={assignGroup}
+              >
+                {t('calendar.challengeAssign.assignGroup')}
+              </button>
+            </div>
+          )}
+
           {assignable.length > 0 && (
             <div className="ll-event-assign-row">
               <label className="ll-form-grow">

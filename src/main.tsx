@@ -7,6 +7,7 @@ import { LocaleProvider } from './i18n/LocaleProvider';
 import { DeveloperModeProvider } from './lib/developerMode';
 import { ThemeProvider } from './lib/theme';
 import { LoadingProvider } from './lib/loading/LoadingProvider';
+import { ErrorReportModal } from './components/common/ErrorReportModal';
 import { StartupSplashProvider } from './lib/startupSplash/StartupSplashProvider';
 import { useAppBoot } from './hooks/useAppBoot';
 
@@ -24,6 +25,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <StartupSplashProvider>
               <BrowserRouter>
                 <AppRoot />
+                <ErrorReportModal />
               </BrowserRouter>
             </StartupSplashProvider>
           </LoadingProvider>

@@ -249,6 +249,15 @@ export class AppStateService {
         targets.set(challenge.id, challenge.icloudReminderHref);
       }
     }
+    for (const group of this.challengeGroups.getAll()) {
+      if (group.icloudSubtaskHrefs) {
+        for (const [challengeId, href] of Object.entries(group.icloudSubtaskHrefs)) {
+          if (!targets.has(challengeId)) {
+            targets.set(challengeId, href);
+          }
+        }
+      }
+    }
     for (const event of this.calendar.getAll()) {
       if (!event.linkedChallengeId || !event.externalHref || !event.syncSourceId) continue;
       if (!parseAppleRemindersSourceId(event.syncSourceId)) continue;
@@ -490,6 +499,20 @@ export class AppStateService {
     return result;
   }
 
+  assignEventToGroup(eventId: string, groupId: string) {
+    const event = this.calendar.getById(eventId);
+    if (!event?.readOnly || !event.date) return null;
+    const result = this.calendar.assignLinkedGroup(eventId, groupId);
+    if (result) this.persist();
+    return result;
+  }
+
+  unlinkEventFromGroup(eventId: string) {
+    const result = this.calendar.assignLinkedGroup(eventId, undefined);
+    if (result) this.persist();
+    return result;
+  }
+
   unlinkEventFromChallenge(eventId: string) {
     const result = this.calendar.assignLinkedChallenge(eventId, undefined);
     if (result) this.persist();
@@ -659,6 +682,9 @@ export class AppStateService {
       parsed.listGuid,
       event.externalHref,
       completed,
+      event.isRecurring
+        ? { isRecurring: true, completionDate: event.date ?? DateUtils.today() }
+        : undefined,
     );
   }
 
@@ -720,7 +746,26 @@ export class AppStateService {
     if (!target) return;
     const account = this.appleRemindersAccounts.getById(target.accountId);
     if (!account) return;
-    await AppleRemindersApi.setReminderCompleted(account, target.listGuid, target.href, completed);
+
+    const linkedEvent = target.eventId ? this.calendar.getById(target.eventId) : undefined;
+    const isRecurring =
+      (challenge?.recurrence !== 'none' && challenge?.recurrence !== 'irregular') ||
+      linkedEvent?.isRecurring === true;
+    const completionDate = challenge
+      ? this.resolveChallengeSyncDate(challenge)
+      : linkedEvent?.date ?? DateUtils.today();
+
+    await AppleRemindersApi.setReminderCompleted(
+      account,
+      target.listGuid,
+      target.href,
+      completed,
+      isRecurring && completed
+        ? { isRecurring: true, completionDate }
+        : isRecurring
+          ? { isRecurring: true, completionDate }
+          : undefined,
+    );
   }
 
   async createChallengeICloudReminder(challengeId: string, sourceId: string): Promise<void> {
@@ -756,7 +801,7 @@ export class AppStateService {
 
   async createChallengeGroupICloudReminder(groupId: string, sourceId: string): Promise<void> {
     const group = this.challengeGroups.getById(groupId);
-    if (!group || group.icloudReminderHref) return;
+    if (!group || group.icloudSubtaskHrefs) return;
 
     const parsed = parseAppleRemindersSourceId(sourceId);
     if (!parsed) throw new Error('Ungültige Erinnerungs-Liste.');
@@ -777,7 +822,6 @@ export class AppStateService {
     });
 
     this.challengeGroups.update(groupId, {
-      icloudReminderHref: created.href,
       icloudReminderSourceId: sourceId,
       icloudSubtaskHrefs: created.subtaskHrefs,
     });
@@ -839,16 +883,13 @@ export class AppStateService {
 
   async deleteChallengeGroup(id: string) {
     const group = this.challengeGroups.getById(id);
-    if (group && isTauriApp() && group.icloudReminderHref && group.icloudReminderSourceId) {
+    if (group && isTauriApp() && group.icloudReminderSourceId) {
       const parsed = parseAppleRemindersSourceId(group.icloudReminderSourceId);
       if (parsed) {
         const account = this.appleRemindersAccounts.getById(parsed.accountId);
-        if (account) {
-          await AppleRemindersApi.deleteReminder(account, parsed.listGuid, group.icloudReminderHref);
-          if (group.icloudSubtaskHrefs) {
-            for (const href of Object.values(group.icloudSubtaskHrefs)) {
-              await AppleRemindersApi.deleteReminder(account, parsed.listGuid, href).catch(() => {});
-            }
+        if (account && group.icloudSubtaskHrefs) {
+          for (const href of Object.values(group.icloudSubtaskHrefs)) {
+            await AppleRemindersApi.deleteReminder(account, parsed.listGuid, href).catch(() => {});
           }
         }
       }

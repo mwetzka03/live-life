@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  ArrowRight,
   Circle,
   Crop,
   ImagePlus,
@@ -7,16 +8,19 @@ import {
   MousePointer2,
   Plus,
   Square,
+  Spline,
   Trash2,
   Type,
   ZoomIn,
   ZoomOut,
 } from 'lucide-react';
-import type { VisionBoard, VisionBoardElement } from '../../domain/models/AppData';
+import type { VisionBoard, VisionBoardArrowStyle, VisionBoardElement } from '../../domain/models/AppData';
 import { useLocale } from '../../i18n/LocaleProvider';
 import { useAppState } from '../../hooks/useAppState';
+import { findElementAtPoint } from '../../lib/visionBoardConnectors';
+import { VisionBoardConnectors } from './VisionBoardConnectors';
 
-type Tool = 'select' | 'text' | 'rect' | 'circle' | 'image';
+type Tool = 'select' | 'text' | 'rect' | 'circle' | 'image' | 'arrowStraight' | 'arrowCurved';
 type ResizeHandle = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
 type CropHandle = 'n' | 's' | 'e' | 'w';
 
@@ -495,6 +499,12 @@ export function VisionBoardCanvas({ board }: VisionBoardCanvasProps) {
     elW: number;
     elH: number;
   } | null>(null);
+  const [arrowDraft, setArrowDraft] = useState<{
+    style: VisionBoardArrowStyle;
+    startX: number;
+    startY: number;
+    fromId?: string;
+  } | null>(null);
 
   const bgOpacity = board.backgroundOpacity ?? 100;
   const bgColor = hexToRgba(baseHex(board.backgroundColor), bgOpacity);
@@ -581,6 +591,40 @@ export function VisionBoardCanvas({ board }: VisionBoardCanvasProps) {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const { x, y } = canvasPoint(e.clientX, e.clientY, canvas, board.zoom);
+    const hit = findElementAtPoint(board.elements, x, y);
+
+    if (tool === 'arrowStraight' || tool === 'arrowCurved') {
+      const style: VisionBoardArrowStyle = tool === 'arrowCurved' ? 'curved' : 'straight';
+      if (!arrowDraft) {
+        setArrowDraft({
+          style,
+          startX: x,
+          startY: y,
+          fromId: hit?.id,
+        });
+        return;
+      }
+      addElement({
+        type: 'connector',
+        x: arrowDraft.startX,
+        y: arrowDraft.startY,
+        width: x - arrowDraft.startX,
+        height: y - arrowDraft.startY,
+        rotation: 0,
+        zIndex: board.elements.length + 1,
+        connectorStyle: style,
+        connectorFromId: arrowDraft.fromId,
+        connectorToId: hit?.id,
+        fromAnchor: 'center',
+        toAnchor: 'center',
+        endX: hit ? undefined : x,
+        endY: hit ? undefined : y,
+        stroke: '#a78bfa',
+        strokeWidth: 2,
+      });
+      setArrowDraft(null);
+      return;
+    }
 
     if (tool === 'text') {
       addElement({
@@ -801,7 +845,10 @@ export function VisionBoardCanvas({ board }: VisionBoardCanvasProps) {
     return () => window.removeEventListener('keydown', onKey);
   }, [app, board.id, selectedId]);
 
-  const sortedElements = [...board.elements].sort((a, b) => a.zIndex - b.zIndex);
+  const sortedElements = [...board.elements]
+    .filter((e) => e.type !== 'connector')
+    .sort((a, b) => a.zIndex - b.zIndex);
+  const connectors = board.elements.filter((e) => e.type === 'connector');
 
   return (
     <div className="ll-visionboard-canvas-wrap">
@@ -814,6 +861,8 @@ export function VisionBoardCanvas({ board }: VisionBoardCanvasProps) {
               ['rect', Square, t('visionboard.tools.rect')],
               ['circle', Circle, t('visionboard.tools.circle')],
               ['image', ImagePlus, t('visionboard.tools.image')],
+              ['arrowStraight', ArrowRight, t('visionboard.tools.arrowStraight')],
+              ['arrowCurved', Spline, t('visionboard.tools.arrowCurved')],
             ] as const
           ).map(([id, Icon, label]) => (
             <button
@@ -864,6 +913,15 @@ export function VisionBoardCanvas({ board }: VisionBoardCanvasProps) {
           onClick={handleCanvasClick}
           role="presentation"
         >
+          <VisionBoardConnectors
+            connectors={connectors}
+            elements={board.elements}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+          />
+          {arrowDraft && (
+            <div className="ll-vb-arrow-draft-hint">{t('visionboard.arrowDraftHint')}</div>
+          )}
           {selected && (
             <div
               className="ll-vb-popover-anchor"

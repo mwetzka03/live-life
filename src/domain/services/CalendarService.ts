@@ -152,8 +152,33 @@ export class CalendarService {
       const updated: CalendarEvent = {
         ...this.events[index],
         linkedChallengeId: challengeId,
+        linkedGroupId: challengeId ? undefined : this.events[index].linkedGroupId,
         linkedShopItemId: challengeId ? undefined : this.events[index].linkedShopItemId,
         syncKind: challengeId ? undefined : this.events[index].syncKind,
+        updatedAt: now,
+      };
+      this.events[index] = updated;
+      if (event.id === eventId) primary = updated;
+    }
+    return primary;
+  }
+
+  assignLinkedGroup(eventId: string, groupId: string | undefined): CalendarEvent | null {
+    const existing = this.getById(eventId);
+    if (!existing?.readOnly) return null;
+    const now = DateUtils.nowIso();
+    const targets = existing.seriesKey
+      ? this.events.filter((e) => e.seriesKey === existing.seriesKey && e.readOnly)
+      : [existing];
+    let primary: CalendarEvent | null = null;
+    for (const event of targets) {
+      const index = this.events.findIndex((e) => e.id === event.id);
+      if (index === -1) continue;
+      const updated: CalendarEvent = {
+        ...this.events[index],
+        linkedGroupId: groupId,
+        linkedChallengeId: groupId ? undefined : this.events[index].linkedChallengeId,
+        linkedShopItemId: groupId ? undefined : this.events[index].linkedShopItemId,
         updatedAt: now,
       };
       this.events[index] = updated;
