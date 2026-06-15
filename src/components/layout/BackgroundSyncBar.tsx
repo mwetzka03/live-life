@@ -5,7 +5,10 @@ import { subscribeBackgroundSync, type BackgroundSyncState } from '../../lib/bac
 
 export function BackgroundSyncBar() {
   const { t } = useLocale();
-  const [syncState, setSyncState] = useState<BackgroundSyncState>({ active: false, extended: false });
+  const [syncState, setSyncState] = useState<BackgroundSyncState>({
+    active: false,
+    messageKey: 'syncAuth.backgroundActive',
+  });
 
   useEffect(() => subscribeBackgroundSync(setSyncState), []);
 
@@ -13,8 +16,8 @@ export function BackgroundSyncBar() {
 
   return (
     <div className="ll-background-sync-bar" role="status" aria-live="polite">
-      <RefreshCw size={14} className="spin" />
-      {syncState.extended ? t('syncAuth.backgroundExtended') : t('syncAuth.backgroundActive')}
+      <RefreshCw size={14} className="ll-spin" />
+      {t(syncState.messageKey)}
     </div>
   );
 }

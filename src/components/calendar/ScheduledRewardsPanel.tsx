@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { CheckCircle2, Coins, Gift } from 'lucide-react';
 import type { CalendarViewMode } from '../../domain/models/AppData';
 import { DateUtils } from '../../domain/services/DateUtils';
@@ -5,6 +6,10 @@ import { useLocale } from '../../i18n/LocaleProvider';
 import { useAppState } from '../../hooks/useAppState';
 import { getScheduledRewardsInRange, getViewRange } from '../../lib/scheduledRewards';
 import { AppIcon } from '../common/AppIcon';
+import { FitPager } from '../common/FitPager';
+import { CollapsibleSection } from '../common/CollapsibleSection';
+
+const PAGE_SIZE = 5;
 
 interface ScheduledRewardsPanelProps {
   viewMode: CalendarViewMode;
@@ -17,6 +22,15 @@ export function ScheduledRewardsPanel({ viewMode, selectedDate }: ScheduledRewar
   const { start, end } = getViewRange(viewMode, selectedDate);
   const rewards = getScheduledRewardsInRange(app, start, end, balance);
   const pending = rewards.filter((r) => !r.claimed);
+  const [page, setPage] = useState(0);
+
+  const pageCount = Math.max(1, Math.ceil(rewards.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const pageItems = rewards.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
+
+  useEffect(() => {
+    setPage((current) => Math.min(current, Math.max(0, pageCount - 1)));
+  }, [pageCount, rewards.length]);
 
   if (rewards.length === 0) return null;
 
@@ -30,15 +44,17 @@ export function ScheduledRewardsPanel({ viewMode, selectedDate }: ScheduledRewar
   const totalPendingCost = pending.reduce((sum, r) => sum + r.item.price, 0);
 
   return (
-    <section className="ll-scheduled-rewards-panel">
-      <header>
-        <div>
-          <Gift size={18} />
-          <h2>{t('calendar.scheduledRewards')}</h2>
-        </div>
-        <span>{periodLabel}</span>
-      </header>
-
+    <CollapsibleSection
+      className="ll-scheduled-rewards-panel"
+      defaultCollapsed
+      headerIcon={<Gift size={18} />}
+      title={t('calendar.scheduledRewards')}
+      headerRight={<span>{periodLabel}</span>}
+      collapsedSummary={t('calendar.scheduledRewardsCollapsed', {
+        count: rewards.length,
+        coins: totalPendingCost,
+      })}
+    >
       {pending.length > 0 && (
         <p className="ll-scheduled-rewards-summary">
           <Coins size={14} />
@@ -57,7 +73,7 @@ export function ScheduledRewardsPanel({ viewMode, selectedDate }: ScheduledRewar
       )}
 
       <ul className="ll-scheduled-rewards-list">
-        {rewards.map(({ event, item, claimed, canAfford, shortfall }) => (
+        {pageItems.map(({ event, item, claimed, canAfford, shortfall }) => (
           <li
             key={event.id}
             className={`ll-scheduled-reward${claimed ? ' claimed' : ''}${!claimed && !canAfford ? ' short' : ''}`}
@@ -92,6 +108,15 @@ export function ScheduledRewardsPanel({ viewMode, selectedDate }: ScheduledRewar
           </li>
         ))}
       </ul>
-    </section>
+
+      {rewards.length > PAGE_SIZE && (
+        <FitPager
+          className="ll-fit-pager-compact"
+          page={safePage}
+          pageCount={pageCount}
+          onPageChange={setPage}
+        />
+      )}
+    </CollapsibleSection>
   );
 }

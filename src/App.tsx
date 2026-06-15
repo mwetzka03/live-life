@@ -11,12 +11,14 @@ import { CalendarPage } from './pages/CalendarPage';
 import { SyncAuthPrompt } from './components/settings/SyncAuthPrompt';
 import { OnboardingOverlay } from './components/onboarding/OnboardingOverlay';
 import { hasStoredAppData } from './lib/dataBackup';
+import { ChallengeCompleteProvider } from './lib/challengeComplete/ChallengeCompleteProvider';
 
 export function App() {
   const [onboardingRequired, setOnboardingRequired] = useState(() => !hasStoredAppData());
 
   return (
-    <AppShell>
+    <ChallengeCompleteProvider>
+      <AppShell>
       {onboardingRequired && (
         <OnboardingOverlay onComplete={() => setOnboardingRequired(false)} />
       )}
@@ -31,5 +33,6 @@ export function App() {
         <Route path="/settings" element={<SettingsPanel />} />
       </Routes>
     </AppShell>
+    </ChallengeCompleteProvider>
   );
 }

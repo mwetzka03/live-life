@@ -3,8 +3,9 @@ import type { CalendarEvent } from '../../domain/models/AppData';
 import { DateUtils } from '../../domain/services/DateUtils';
 import { useLocale } from '../../i18n/LocaleProvider';
 import { useAppState } from '../../hooks/useAppState';
-import { useLoading } from '../../lib/loading/LoadingProvider';
 import { AppIcon } from '../common/AppIcon';
+import { getChallengeAppearance } from '../../lib/challengeDisplay';
+import { useChallengeComplete } from '../../lib/challengeComplete/ChallengeCompleteProvider';
 
 interface CalendarEventChipProps {
   event: CalendarEvent;
@@ -20,8 +21,8 @@ export function CalendarEventChip({
   onOpenDetails,
 }: CalendarEventChipProps) {
   const { app, balance } = useAppState();
-  const { runWithLoading } = useLoading();
   const { t } = useLocale();
+  const { requestComplete } = useChallengeComplete();
   const challenge = event.linkedChallengeId ? app.challenges.getById(event.linkedChallengeId) : undefined;
   const shopItem = event.linkedShopItemId ? app.shop.getById(event.linkedShopItemId) : undefined;
   const completionDate = event.date ?? date;
@@ -37,21 +38,19 @@ export function CalendarEventChip({
 
   const toggle = () => {
     if (isShop) {
-      void runWithLoading(async () => {
-        if (rewardClaimed) app.unclaimEventReward(event.id);
-        else app.claimEventReward(event.id);
-      }, rewardClaimed ? t('loading.rewardUndo') : t('loading.rewardRedeem'));
+      if (rewardClaimed) app.unclaimEventReward(event.id);
+      else app.claimEventReward(event.id);
       return;
     }
     if (challenge) {
       const canToggleOff = challenge.recurrence !== 'irregular' || challengeDone;
-      void runWithLoading(async () => {
+      void (async () => {
         if (challengeDone && canToggleOff) {
           await app.uncompleteChallenge(challenge.id, completionDate);
         } else {
-          await app.completeLinkedEventChallenge(event.id, completionDate);
+          requestComplete(challenge.id, date, event.id);
         }
-      }, challengeDone ? t('loading.challengeReopen') : t('loading.challengeComplete'));
+      })();
     }
   };
 
@@ -67,9 +66,15 @@ export function CalendarEventChip({
     }
   };
 
-  const accentColor = shopItem?.color ?? challenge?.color ?? event.color;
+  const challengeAppearance = challenge
+    ? getChallengeAppearance(challenge, app.challengeGroups.getById.bind(app.challengeGroups))
+    : undefined;
+
+  const accentColor = shopItem?.color ?? challengeAppearance?.color ?? event.color;
   const accentIcon =
-    shopItem?.icon ?? challenge?.icon ?? (event.syncKind === 'reminder' ? 'bell' : event.icon);
+    shopItem?.icon ??
+    challengeAppearance?.icon ??
+    (event.syncKind === 'reminder' ? 'bell' : event.icon);
 
   return (
     <div

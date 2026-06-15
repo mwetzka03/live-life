@@ -4,13 +4,13 @@ import type { CalendarEvent, ChallengeCategory, RecurrenceType } from '../../dom
 import { DateUtils } from '../../domain/services/DateUtils';
 import { useLocale } from '../../i18n/LocaleProvider';
 import { useAppState } from '../../hooks/useAppState';
-import { useLoading } from '../../lib/loading/LoadingProvider';
-import { useReminderSuggestionLimit } from '../../hooks/useReminderSuggestionLimit';
 import { AppIcon, ColorPicker, IconPicker } from '../common/AppIcon';
 import { Modal } from '../common/Modal';
 import { InfoTip } from '../common/InfoTip';
+import { FitPager } from '../common/FitPager';
+import { CollapsibleSection } from '../common/CollapsibleSection';
 
-const SUGGESTION_LIMIT = 5;
+const PAGE_SIZE = 5;
 
 interface AcceptReminderModalProps {
   open: boolean;
@@ -20,7 +20,6 @@ interface AcceptReminderModalProps {
 
 export function AcceptReminderModal({ open, event, onClose }: AcceptReminderModalProps) {
   const { app } = useAppState();
-  const { runWithLoading } = useLoading();
   const { t, dict, locale } = useLocale();
   const dateLocale = locale === 'en' ? 'en-US' : 'de-DE';
 
@@ -68,21 +67,19 @@ export function AcceptReminderModal({ open, event, onClose }: AcceptReminderModa
     const effectiveStartDate =
       recurrence === 'none' ? (event.date ?? DateUtils.today()) : startDate;
     if (recurrence !== 'none' && !effectiveStartDate) return;
-    void runWithLoading(async () => {
-      app.acceptReminderAsChallenge(event.id, {
-        title: title.trim(),
-        description: description.trim() || undefined,
-        icon,
-        color,
-        category,
-        coinReward,
-        recurrence,
-        weeklyDays: recurrence === 'weekly' ? weeklyDays : undefined,
-        startDate: effectiveStartDate,
-        startTime: startTime.trim() || undefined,
-      });
-      onClose();
-    }, t('loading.reminderAccept'));
+    app.acceptReminderAsChallenge(event.id, {
+      title: title.trim(),
+      description: description.trim() || undefined,
+      icon,
+      color,
+      category,
+      coinReward,
+      recurrence,
+      weeklyDays: recurrence === 'weekly' ? weeklyDays : undefined,
+      startDate: effectiveStartDate,
+      startTime: startTime.trim() || undefined,
+    });
+    onClose();
   };
 
   if (!event) return null;
@@ -216,10 +213,16 @@ interface ReminderSuggestionsProps {
 export function ReminderSuggestions({ onAccept }: ReminderSuggestionsProps) {
   const { app } = useAppState();
   const { t, dict, locale } = useLocale();
-  const suggestionLimit = useReminderSuggestionLimit(SUGGESTION_LIMIT);
   const allOpen = app.getReminderSuggestions();
-  const suggestions = allOpen.slice(0, suggestionLimit);
+  const [page, setPage] = useState(0);
+  const pageCount = Math.max(1, Math.ceil(allOpen.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const suggestions = allOpen.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
   const dateLocale = locale === 'en' ? 'en-US' : 'de-DE';
+
+  useEffect(() => {
+    setPage((current) => Math.min(current, Math.max(0, pageCount - 1)));
+  }, [pageCount, allOpen.length]);
 
   const formatSuggestionMeta = (event: CalendarEvent): string | null => {
     const parts: string[] = [];
@@ -239,25 +242,31 @@ export function ReminderSuggestions({ onAccept }: ReminderSuggestionsProps) {
     return parts.length > 0 ? parts.join(' · ') : null;
   };
 
-  if (suggestions.length === 0) return null;
+  if (allOpen.length === 0) return null;
 
   return (
-    <section className="ll-reminder-suggestions">
-      <header>
-        <div>
-          <Bell size={18} />
-          <h2>
-            {t('challenges.suggestions.title')}
-            <InfoTip text={t('help.challengeSuggestions')} />
-          </h2>
-        </div>
-        <span>
-          {t('challenges.suggestions.openCount', {
-            shown: suggestions.length,
-            total: allOpen.length,
-          })}
-        </span>
-      </header>
+    <CollapsibleSection
+      className="ll-reminder-suggestions"
+      defaultCollapsed
+      headerIcon={<Bell size={18} />}
+      title={
+        <>
+          {t('challenges.suggestions.title')}
+          <InfoTip text={t('help.challengeSuggestions')} />
+        </>
+      }
+      collapsedSummary={t('challenges.suggestions.collapsedSummary', { count: allOpen.length })}
+      headerRight={
+        !allOpen.length ? undefined : (
+          <span>
+            {t('challenges.suggestions.openCount', {
+              shown: suggestions.length,
+              total: allOpen.length,
+            })}
+          </span>
+        )
+      }
+    >
       <ul className="ll-reminder-suggestion-list">
         {suggestions.map((event) => {
           const line = formatSuggestionMeta(event);
@@ -296,6 +305,14 @@ export function ReminderSuggestions({ onAccept }: ReminderSuggestionsProps) {
           );
         })}
       </ul>
-    </section>
+      {allOpen.length > PAGE_SIZE && (
+        <FitPager
+          className="ll-fit-pager-compact"
+          page={safePage}
+          pageCount={pageCount}
+          onPageChange={setPage}
+        />
+      )}
+    </CollapsibleSection>
   );
 }

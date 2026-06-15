@@ -18,9 +18,11 @@ export function ShopPanel() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [message, setMessage] = useState('');
 
-  const { containerRef, page, setPage, pageCount, pageItems, showPager } = useFitGridPagination(items, {
-    fallbackCardHeight: 168,
+  const { containerRef, page, setPage, pageCount, pageItems, showPager, gridStyle } = useFitGridPagination(items, {
+    cardMinWidth: 340,
+    fallbackCardHeight: 200,
     itemSelector: '.ll-shop-card',
+    maxColumns: 4,
   });
 
   const purchase = (id: string) => {
@@ -67,7 +69,7 @@ export function ShopPanel() {
             <p>{t('shop.empty')}</p>
           </div>
         ) : (
-          <div className="ll-card-grid shop ll-card-grid-fit">
+          <div className="ll-card-grid shop ll-card-grid-fit" style={gridStyle}>
             {pageItems.map((item) => (
               <ShopItemCard
                 key={item.id}

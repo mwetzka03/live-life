@@ -42,12 +42,13 @@ export class ChallengeService {
   }
 
   isDueOn(challenge: Challenge, date: string): boolean {
-    if (date < challenge.startDate) return false;
+    if (challenge.startDate && date < challenge.startDate) return false;
     if (challenge.endDate && date > challenge.endDate) return false;
 
     switch (challenge.recurrence) {
       case 'none':
         if (this.hasAnyCompletion(challenge.id)) return false;
+        if (!challenge.startDate) return false;
         return date === challenge.startDate;
       case 'irregular':
         return true;
@@ -56,6 +57,7 @@ export class ChallengeService {
       case 'weekly':
         return (challenge.weeklyDays ?? []).includes(DateUtils.parseIsoDate(date).getDay());
       case 'monthly':
+        if (!challenge.startDate) return false;
         return (
           DateUtils.parseIsoDate(date).getDate() === DateUtils.parseIsoDate(challenge.startDate).getDate()
         );
@@ -155,7 +157,11 @@ export class ChallengeService {
   complete(challengeId: string, date: string): ChallengeCompletion | null {
     const challenge = this.getById(challengeId);
     if (!challenge) return null;
-    if (!this.isDueOn(challenge, date)) return null;
+    const canComplete =
+      challenge.recurrence === 'none' && !challenge.startDate
+        ? !this.hasAnyCompletion(challengeId)
+        : this.isDueOn(challenge, date);
+    if (!canComplete) return null;
     return this.recordCompletion(challenge, challengeId, date);
   }
 

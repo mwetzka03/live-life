@@ -256,6 +256,7 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: clamp(0.45rem, 1vw, 0.75rem);
+  margin-bottom: clamp(1rem, 2.5vw, 1.5rem);
 }
 
 .ll-page-fit-panels .ll-scheduled-rewards-panel,
@@ -301,6 +302,40 @@ textarea {
   color: var(--ll-accent);
   background: color-mix(in srgb, var(--ll-accent) 12%, var(--ll-bg-card));
   border-bottom: 1px solid var(--ll-border);
+}
+
+.ll-pending-outbox-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.45rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #b45309;
+  background: color-mix(in srgb, #f59e0b 14%, var(--ll-bg-card));
+  border-bottom: 1px solid color-mix(in srgb, #f59e0b 35%, var(--ll-border));
+}
+
+.ll-pending-outbox-bar-message {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.ll-pending-outbox-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.ll-pending-outbox-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .ll-page-header {
@@ -570,6 +605,11 @@ textarea {
   text-align: left;
   cursor: pointer;
   width: 100%;
+  color: var(--ll-text);
+}
+
+.ll-chip.challenge {
+  color: var(--ll-text);
 }
 
 .ll-chip span {
@@ -591,20 +631,126 @@ textarea {
 
 .ll-card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: clamp(0.85rem, 2vw, 1.25rem);
+}
+
+.ll-card-grid > .ll-card,
+.ll-card-grid > .ll-group-card {
+  width: 100%;
+  min-width: 0;
+}
+
+.ll-card-grid-fit > .ll-card-wide {
+  grid-column: span 2;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.ll-collapsible-section {
+  background: var(--ll-bg-card);
+  border: 1px solid var(--ll-border);
+  border-radius: 18px;
+  padding: clamp(0.75rem, 1.8vw, 1rem);
+}
+
+.ll-collapsible-section.ll-reminder-suggestions {
+  background: linear-gradient(135deg, color-mix(in srgb, #a855f7 10%, var(--ll-bg-card)), var(--ll-bg-card));
+}
+
+.ll-collapsible-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.ll-collapsible-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ll-collapsible-title {
+  font-size: 1rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.ll-collapsible-summary {
+  margin-left: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ll-text-muted);
+}
+
+.ll-collapsible-header-right {
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  color: var(--ll-text-muted);
+  font-weight: 600;
+}
+
+.ll-collapsible-header-right.muted {
+  opacity: 0.85;
+}
+
+.ll-collapsible-body {
+  margin-top: 0.65rem;
+}
+
+.ll-collapsible-section.ll-scheduled-rewards-panel .ll-collapsible-body,
+.ll-collapsible-section.ll-completed-challenges-panel .ll-collapsible-body {
+  margin-top: 0.5rem;
 }
 
 .ll-challenge-tabs {
   margin-bottom: 0;
 }
 
-.ll-page-fit-toolbar .ll-challenge-tabs {
-  margin-top: 0.35rem;
+.ll-challenge-toolbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
-.ll-page-fit-toolbar .ll-reminder-suggestions {
-  margin-bottom: 0;
+.ll-challenge-view-filter {
+  flex-shrink: 0;
+}
+
+.ll-page-fit-toolbar .ll-challenge-tabs {
+  margin-top: 0;
+}
+
+.ll-page-fit-toolbar .ll-collapsible-section.ll-reminder-suggestions {
+  margin-bottom: clamp(0.85rem, 2vw, 1.25rem);
+}
+
+.ll-page-fit-toolbar .ll-challenge-toolbar-row {
+  margin-top: 0;
 }
 
 .ll-panel-list-body {
@@ -619,6 +765,11 @@ textarea {
 
 .ll-card.shop-card {
   align-items: stretch;
+  min-height: 200px;
+}
+
+.ll-shop-page .ll-card-grid-fit {
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
 }
 
 .ll-card.shop-card .ll-card-actions.column {
@@ -675,41 +826,47 @@ textarea {
   border-radius: 18px;
   border-top: 4px solid var(--ll-accent);
   padding: clamp(0.75rem, 1.5vw, 1rem);
-  display: flex;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  grid-template-areas: 'icon body actions';
+  align-items: start;
   gap: clamp(0.65rem, 1.2vw, 0.85rem);
   min-width: 0;
+  width: 100%;
   overflow: hidden;
 }
 
 .ll-card-icon {
+  grid-area: icon;
   width: 48px;
   height: 48px;
   border-radius: 14px;
   display: grid;
   place-items: center;
-  flex: 0 0 48px;
 }
 
 .ll-card-body {
-  flex: 1 1 auto;
+  grid-area: body;
   min-width: 0;
+  overflow: hidden;
 }
 
 .ll-card-body h3 {
   margin: 0 0 0.35rem;
   line-height: 1.35;
-  word-break: break-word;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
 .ll-card-actions {
+  grid-area: actions;
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
   gap: 0.35rem;
   align-items: center;
-  flex: 0 0 auto;
-  align-self: flex-start;
+  flex-shrink: 0;
+  align-self: start;
 }
 
 .ll-card-actions.column {
@@ -717,6 +874,15 @@ textarea {
   align-items: stretch;
   min-width: 7.25rem;
   max-width: 100%;
+}
+
+.ll-card-actions.column.icons {
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: auto;
+  gap: 0.4rem;
+  padding-top: 0.1rem;
 }
 
 .ll-card-actions.column .ll-btn {
@@ -729,10 +895,119 @@ textarea {
   top: 0;
 }
 
+.ll-group-card {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'main actions';
+}
+
+.ll-group-card-open {
+  grid-area: main;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  grid-template-areas: 'icon body';
+  align-items: start;
+  gap: clamp(0.65rem, 1.2vw, 0.85rem);
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ll-group-card-open .ll-card-icon {
+  grid-area: icon;
+}
+
+.ll-group-card-open .ll-card-body {
+  grid-area: body;
+}
+
+.ll-group-challenge-coins {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+}
+
+.ll-group-detail-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.ll-group-detail-header > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.ll-group-detail-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.ll-group-detail-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.75rem;
+  border: 1px solid var(--ll-border);
+  border-left-width: 3px;
+  border-radius: 12px;
+  background: var(--ll-bg-muted);
+}
+
+.ll-group-detail-list li.done {
+  opacity: 0.75;
+}
+
+.ll-group-detail-list li.done strong {
+  text-decoration: line-through;
+}
+
+.ll-group-detail-item-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.ll-group-detail-item-body p {
+  margin: 0.25rem 0 0;
+  font-size: 0.88rem;
+  color: var(--ll-text-muted);
+}
+
+.ll-group-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.4rem;
+  font-size: 0.78rem;
+}
+
+.ll-group-detail-meta span {
+  background: var(--ll-bg-card);
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+}
+
+.ll-group-detail-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
 .ll-card-body p {
   margin: 0;
   color: var(--ll-text-muted);
   font-size: 0.9rem;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
 .ll-card-meta,
@@ -1072,6 +1347,7 @@ textarea {
   padding: 0.65rem 0.75rem;
   background: var(--ll-bg-muted);
   border-radius: 12px;
+  margin-top: 0.5rem;
 }
 
 .ll-form-actions {
@@ -1149,7 +1425,7 @@ textarea {
 
 .ll-topbar-sync.syncing {
   opacity: 0.7;
-  cursor: wait;
+  cursor: default;
 }
 
 .ll-spin {
@@ -1206,11 +1482,14 @@ textarea {
 }
 
 .ll-reminder-suggestions {
+  margin-bottom: 1rem;
+}
+
+.ll-reminder-suggestions:not(.ll-collapsible-section) {
   background: linear-gradient(135deg, color-mix(in srgb, #a855f7 10%, var(--ll-bg-card)), var(--ll-bg-card));
   border: 1px solid var(--ll-border);
   border-radius: 18px;
   padding: clamp(0.85rem, 2vw, 1.1rem);
-  margin-bottom: 1rem;
 }
 
 .ll-reminder-suggestions header {
@@ -1376,6 +1655,7 @@ textarea {
 .ll-scheduled-reward-body strong {
   display: inline;
   font-size: 0.9rem;
+  color: var(--ll-text);
 }
 
 .ll-scheduled-reward-title {
@@ -1397,10 +1677,19 @@ textarea {
   color: var(--ll-text-muted);
 }
 
+.ll-group-card .ll-card-actions.icons {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.35rem;
+}
+
 .ll-scheduled-reward-status {
   flex-shrink: 0;
   font-size: 0.78rem;
   font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .ll-scheduled-reward-status .ok {
@@ -2063,7 +2352,14 @@ textarea {
   border-top: 1px solid var(--ll-border);
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 0.75rem;
+  clear: both;
+}
+
+.ll-event-challenge-assign + .ll-form-actions {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--ll-border);
 }
 
 .ll-event-assign-row {
@@ -2099,7 +2395,8 @@ textarea {
   background: var(--ll-bg-muted);
   border-radius: 10px;
   border: 1px solid var(--ll-border);
-  margin-top: 0.25rem;
+  margin: 0;
+  flex-shrink: 0;
 }
 
 .ll-linked-challenge > div {
@@ -2682,6 +2979,34 @@ textarea {
 
 .ll-group-link-list li span {
   flex: 1;
+}
+
+.ll-group-link-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.65rem;
+  margin-top: 0.65rem;
+}
+
+.ll-group-link-row-single {
+  margin-top: 0.45rem;
+}
+
+.ll-group-link-field {
+  flex: 1 1 12rem;
+  min-width: 0;
+  margin: 0;
+}
+
+.ll-group-link-action {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  margin-bottom: 0.1rem;
+}
+
+.ll-group-link-action-full {
+  width: 100%;
+  justify-content: center;
 }
 
 .ll-visionboard-page {

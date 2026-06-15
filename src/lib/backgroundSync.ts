@@ -2,13 +2,15 @@ import { yieldToUi } from './loading/yieldToUi';
 
 export interface BackgroundSyncState {
   active: boolean;
-  extended: boolean;
+  messageKey: string;
 }
 
 type Listener = (state: BackgroundSyncState) => void;
 
+const DEFAULT_MESSAGE_KEY = 'syncAuth.backgroundActive';
+
 const listeners = new Set<Listener>();
-let state: BackgroundSyncState = { active: false, extended: false };
+let state: BackgroundSyncState = { active: false, messageKey: DEFAULT_MESSAGE_KEY };
 
 function notify() {
   for (const listener of listeners) {
@@ -16,8 +18,8 @@ function notify() {
   }
 }
 
-export function setBackgroundSyncActive(active: boolean, extended = false) {
-  state = { active, extended: active && extended };
+export function setBackgroundSyncActive(active: boolean, messageKey: string = DEFAULT_MESSAGE_KEY) {
+  state = { active, messageKey: active ? messageKey : DEFAULT_MESSAGE_KEY };
   notify();
 }
 
@@ -27,9 +29,12 @@ export function subscribeBackgroundSync(listener: Listener): () => void {
   return () => listeners.delete(listener);
 }
 
-/** Läuft ohne Vollbild-Overlay – App bleibt bedienbar, Sync-Leiste oben. */
-export async function runBackgroundSync<T>(fn: () => Promise<T>): Promise<T> {
-  setBackgroundSyncActive(true, false);
+/** Runs without full-screen overlay – app stays usable, sync bar at top. */
+export async function runBackgroundSync<T>(
+  fn: () => Promise<T>,
+  messageKey: string = DEFAULT_MESSAGE_KEY,
+): Promise<T> {
+  setBackgroundSyncActive(true, messageKey);
   await yieldToUi();
   try {
     return await fn();

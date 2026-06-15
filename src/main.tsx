@@ -10,11 +10,9 @@ import { LoadingProvider } from './lib/loading/LoadingProvider';
 import { ErrorReportModal } from './components/common/ErrorReportModal';
 import { StartupSplashProvider } from './lib/startupSplash/StartupSplashProvider';
 import { useAppBoot } from './hooks/useAppBoot';
-import { useSyncOnClose } from './hooks/useSyncOnClose';
 
 function AppRoot() {
   useAppBoot();
-  useSyncOnClose();
   return <App />;
 }
 

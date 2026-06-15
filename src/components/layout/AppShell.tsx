@@ -5,11 +5,14 @@ import { useLocale } from '../../i18n/LocaleProvider';
 import { useAppState } from '../../hooks/useAppState';
 import { isTauriApp } from '../../domain/services/CalDavApi';
 import { runManualSync } from '../../lib/manualSync';
+import { useLoading } from '../../lib/loading/LoadingProvider';
 import { getSyncOutboxCount, subscribeSyncOutbox } from '../../lib/syncOutbox';
+import { PendingOutboxBar } from './PendingOutboxBar';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { balance } = useAppState();
   const { t } = useLocale();
+  const { runWithLoading } = useLoading();
   const { pathname } = useLocation();
   const isSettings = pathname.startsWith('/settings');
   const [syncing, setSyncing] = useState(false);
@@ -22,11 +25,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const onManualSync = () => {
     if (!isTauriApp() || syncing) return;
     setSyncing(true);
-    void runManualSync().finally(() => setSyncing(false));
+    void runWithLoading(() => runManualSync(), t('loading.syncRunning')).finally(() => setSyncing(false));
   };
 
   return (
     <div className="ll-app">
+      <PendingOutboxBar outboxCount={outboxCount} />
       <header className="ll-topbar">
         <div className="ll-brand">
           <img src="/app-icon.png" alt={t('brand.name')} className="ll-logo" />
@@ -60,18 +64,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
 
         <div className="ll-topbar-actions">
-          {isTauriApp() && (
+          {isTauriApp() && !pendingOutbox && (
             <button
               type="button"
-              className={`ll-topbar-sync${syncing ? ' syncing' : ''}${pendingOutbox ? ' pending' : ''}`}
+              className={`ll-topbar-sync${syncing ? ' syncing' : ''}`}
               onClick={onManualSync}
               disabled={syncing}
               aria-label={t('nav.syncRefresh')}
-              title={
-                pendingOutbox
-                  ? `${t('nav.syncRefresh')} (${outboxCount})`
-                  : t('nav.syncRefresh')
-              }
+              title={t('nav.syncRefresh')}
             >
               <RefreshCw size={20} className={syncing ? 'll-spin' : undefined} />
             </button>

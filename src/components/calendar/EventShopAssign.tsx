@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Gift, Plus, Repeat, Unlink } from 'lucide-react';
 import { useLocale } from '../../i18n/LocaleProvider';
 import { useAppState } from '../../hooks/useAppState';
-import { useLoading } from '../../lib/loading/LoadingProvider';
 import { AppIcon } from '../common/AppIcon';
 
 interface EventShopAssignProps {
@@ -21,7 +20,6 @@ export function EventShopAssign({
   isClaimed,
 }: EventShopAssignProps) {
   const { app, balance } = useAppState();
-  const { runWithLoading } = useLoading();
   const { t } = useLocale();
   const [selectedId, setSelectedId] = useState('');
   const [newTitle, setNewTitle] = useState(eventTitle);
@@ -34,22 +32,18 @@ export function EventShopAssign({
 
   const assignExisting = () => {
     if (!selectedId) return;
-    void runWithLoading(async () => {
-      app.assignEventToShopItem(eventId, selectedId);
-      setSelectedId('');
-    }, t('loading.rewardAssign'));
+    app.assignEventToShopItem(eventId, selectedId);
+    setSelectedId('');
   };
 
   const createAndAssign = () => {
     if (!newTitle.trim()) return;
-    void runWithLoading(async () => {
-      app.createShopItemFromEvent(eventId, {
-        title: newTitle.trim(),
-        price: newPrice,
-        description: newDescription.trim() || undefined,
-      });
-      setShowCreate(false);
-    }, t('loading.rewardCreate'));
+    app.createShopItemFromEvent(eventId, {
+      title: newTitle.trim(),
+      price: newPrice,
+      description: newDescription.trim() || undefined,
+    });
+    setShowCreate(false);
   };
 
   const unlink = () => {

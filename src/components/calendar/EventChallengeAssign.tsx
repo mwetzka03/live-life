@@ -4,7 +4,6 @@ import type { ChallengeCategory, RecurrenceType } from '../../domain/models/AppD
 import { DateUtils } from '../../domain/services/DateUtils';
 import { useLocale } from '../../i18n/LocaleProvider';
 import { useAppState } from '../../hooks/useAppState';
-import { useLoading } from '../../lib/loading/LoadingProvider';
 import { AppIcon } from '../common/AppIcon';
 import { InfoPanel } from '../common/InfoPanel';
 
@@ -30,7 +29,6 @@ export function EventChallengeAssign({
   weeklyDays,
 }: EventChallengeAssignProps) {
   const { app } = useAppState();
-  const { runWithLoading } = useLoading();
   const { t, dict } = useLocale();
   const [selectedId, setSelectedId] = useState('');
   const [newTitle, setNewTitle] = useState(eventTitle);
@@ -62,24 +60,20 @@ export function EventChallengeAssign({
 
   const assignExisting = () => {
     if (!selectedId) return;
-    void runWithLoading(async () => {
-      app.assignEventToChallenge(eventId, selectedId);
-      setSelectedId('');
-    }, t('loading.challengeAssign'));
+    app.assignEventToChallenge(eventId, selectedId);
+    setSelectedId('');
   };
 
   const createAndAssign = () => {
     if (!newTitle.trim()) return;
-    void runWithLoading(async () => {
-      app.createChallengeFromEvent(eventId, {
-        title: newTitle.trim(),
-        coinReward: newCoins,
-        category: newCategory,
-        recurrence: newRecurrence,
-        weeklyDays: newRecurrence === 'weekly' ? newWeeklyDays : undefined,
-      });
-      setShowCreate(false);
-    }, t('loading.challengeCreate'));
+    app.createChallengeFromEvent(eventId, {
+      title: newTitle.trim(),
+      coinReward: newCoins,
+      category: newCategory,
+      recurrence: newRecurrence,
+      weeklyDays: newRecurrence === 'weekly' ? newWeeklyDays : undefined,
+    });
+    setShowCreate(false);
   };
 
   const unlink = () => {
@@ -92,10 +86,8 @@ export function EventChallengeAssign({
 
   const assignGroup = () => {
     if (!selectedGroupId) return;
-    void runWithLoading(async () => {
-      app.assignEventToGroup(eventId, selectedGroupId);
-      setSelectedGroupId('');
-    }, t('loading.challengeAssign'));
+    app.assignEventToGroup(eventId, selectedGroupId);
+    setSelectedGroupId('');
   };
 
   return (

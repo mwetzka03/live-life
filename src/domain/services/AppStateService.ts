@@ -69,6 +69,7 @@ export class AppStateService {
   private saveFrame: number | null = null;
   private notifyFrame: number | null = null;
   private suppressICloudPush = false;
+  private bulkSyncDepth = 0;
 
   readonly calendar: CalendarService;
   readonly challenges: ChallengeService;
@@ -293,7 +294,7 @@ export class AppStateService {
         const locallyCompleted = this.isChallengeCompletedInApp(challenge);
         const syncDate =
           challenge.recurrence === 'none'
-            ? challenge.startDate
+            ? (challenge.startDate ?? DateUtils.today())
             : this.resolveChallengeSyncDate(challenge);
 
         if (iCloudCompleted && !locallyCompleted) {
@@ -362,6 +363,18 @@ export class AppStateService {
     return () => this.listeners.delete(listener);
   }
 
+  /** Batches UI updates during long sync operations. */
+  beginBulkSync(): void {
+    this.bulkSyncDepth += 1;
+  }
+
+  endBulkSync(): void {
+    this.bulkSyncDepth = Math.max(0, this.bulkSyncDepth - 1);
+    if (this.bulkSyncDepth === 0) {
+      this.notify();
+    }
+  }
+
   private persist(): void {
     this.data.events = this.calendar.getAll();
     this.data.challenges = this.challenges.getAll();
@@ -412,6 +425,7 @@ export class AppStateService {
   }
 
   private notify(): void {
+    if (this.bulkSyncDepth > 0) return;
     this.cachedSnapshot = null;
     if (typeof window === 'undefined') {
       this.listeners.forEach((l) => l());
@@ -769,6 +783,9 @@ export class AppStateService {
           'SyncOutbox',
         );
       }
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => setTimeout(resolve, 0));
+      });
     }
   }
 
@@ -896,10 +913,19 @@ export class AppStateService {
   }
 
   private syncChallengeGroupMembership(challengeIds: string[], groupId: string) {
+    const group = this.challengeGroups.getById(groupId);
     for (const ch of this.challenges.getAll()) {
       if (challengeIds.includes(ch.id)) {
-        if (ch.groupId !== groupId) {
-          this.challenges.update(ch.id, { groupId });
+        const updates: { groupId: string; icon?: string; color?: string } = { groupId };
+        if (group) {
+          updates.icon = group.icon;
+          updates.color = group.color;
+        }
+        if (
+          ch.groupId !== groupId ||
+          (group && (ch.icon !== group.icon || ch.color !== group.color))
+        ) {
+          this.challenges.update(ch.id, updates);
         }
       } else if (ch.groupId === groupId) {
         this.challenges.update(ch.id, { groupId: undefined });

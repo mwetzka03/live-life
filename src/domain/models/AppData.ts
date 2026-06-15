@@ -74,7 +74,7 @@ export interface Challenge {
   coinReward: number;
   recurrence: RecurrenceType;
   weeklyDays?: number[];
-  startDate: string;
+  startDate?: string;
   endDate?: string;
   streakTarget?: number;
   startTime?: string;
@@ -97,7 +97,7 @@ export interface ChallengeGroup {
   icon: string;
   color: string;
   challengeIds: string[];
-  startDate: string;
+  startDate?: string;
   startTime?: string;
   icloudReminderHref?: string;
   icloudReminderSourceId?: string;

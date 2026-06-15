@@ -74,22 +74,19 @@ export function useAppBoot() {
         'Boot',
       );
 
-      const calDavAuto = app.calDavAccounts.getAll().filter((a) => a.enabled && a.autoSync);
-      const appleAuto = app.appleRemindersAccounts.getAll().filter((a) => a.enabled && a.autoSync);
-      const hasAutoSync = isTauriApp() && (calDavAuto.length > 0 || appleAuto.length > 0);
-
-      if (hasAutoSync) {
+      if (isTauriApp()) {
         splashRef.current.updateMessage(bootT('boot.syncing'));
-        devLog(
-          `Auto-Sync aktiv: ${calDavAuto.length} CalDAV, ${appleAuto.length} Apple Reminders`,
-          'info',
-          'Boot',
-        );
         await yieldToUi();
-        await runStartupSyncOnce();
-        devLog('Startup-Sync abgeschlossen', 'ok', 'Boot');
-      } else {
-        devLog('Kein Auto-Sync konfiguriert – übersprungen', 'info', 'Boot');
+        try {
+          await runStartupSyncOnce();
+          devLog('Startup-Sync abgeschlossen', 'ok', 'Boot');
+        } catch (error) {
+          devLog(
+            `Startup-Sync: ${error instanceof Error ? error.message : String(error)}`,
+            'warn',
+            'Boot',
+          );
+        }
       }
 
       if (cancelled) return;

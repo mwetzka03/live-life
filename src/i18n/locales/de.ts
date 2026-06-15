@@ -28,6 +28,8 @@ export const de = {
     noneOption: '— keine —',
     syncFailed: 'Sync fehlgeschlagen',
     saveFailed: 'Speichern fehlgeschlagen',
+    expand: 'Aufklappen',
+    collapse: 'Einklappen',
     connectionFailed: 'Verbindung fehlgeschlagen',
     action: 'Aktion',
     details: 'Details',
@@ -52,6 +54,8 @@ export const de = {
     settings: 'Einstellungen',
     settingsAria: 'Einstellungen öffnen',
     syncRefresh: 'Kalender & Erinnerungen synchronisieren',
+    syncUpload: 'Ausstehende Änderungen hochladen',
+    syncOutboxWarning: '{{count}} ausstehende Änderung(en) – bitte synchronisieren',
     themeToggle: 'Theme wechseln',
   },
 
@@ -122,6 +126,7 @@ export const de = {
     todayProgress: '{{done}}/{{total}} erledigt',
     completedChallengesToday: 'Abgeschlossene Challenges',
     completedChallengesSummary: '{{count}} erledigt · {{coins}} Münzen verdient',
+    scheduledRewardsCollapsed: '{{count}} Belohnungen · {{coins}} Münzen offen',
     completedToday: 'Heute erledigt',
     scheduledRewards: 'Geplante Belohnungen',
     rewardsEnough: 'Du hast genug Münzen ({{balance}}) für alle {{count}} offenen Belohnungen.',
@@ -192,6 +197,9 @@ export const de = {
     add: 'Challenge',
     tabActive: 'Aktive Challenges',
     tabCompleted: 'Abgeschlossene Challenges',
+    viewAll: 'Alle',
+    viewGroups: 'Gruppen',
+    viewSingle: 'Einzel',
     emptyCompleted: 'Noch keine abgeschlossenen einmaligen Challenges.',
     emptyActive: 'Noch keine aktiven Challenges – leg los!',
     coinsReward: '+{{amount}} Münzen',
@@ -201,6 +209,12 @@ export const de = {
     timesDone: '{{count}}× erledigt',
     reset: 'Zurücksetzen',
     completeToday: 'Heute ✓',
+    completeDate: {
+      title: 'Abschlussdatum wählen',
+      hint: '„{{title}}" ist für {{date}} geplant. Wann soll die Erledigung zählen?',
+      today: 'Heute zählen',
+      scheduled: 'Am {{date}} zählen',
+    },
     modal: {
       editTitle: 'Challenge bearbeiten',
       newTitle: 'Neue Challenge',
@@ -250,6 +264,7 @@ export const de = {
         'Datum und Uhrzeit werden bei Änderungen in iCloud automatisch mit synchronisiert.',
       fromReminder: 'Aus Erinnerung übernommen: {{recurrence}}',
       createChallenge: 'Challenge anlegen',
+      collapsedSummary: '{{count}} offen',
     },
     groups: {
       add: 'Gruppe',
@@ -262,10 +277,11 @@ export const de = {
       linkExisting: 'Bestehende verknüpfen',
       link: 'Verknüpfen',
       createNew: 'Neue Einzel-Challenge',
-      appleReminder: 'Apple-Erinnerung mit Unteraufgaben (optional)',
-      icloudSubtasksHint:
-        'Erstellt für jeden Gruppen-Eintrag eine eigene Apple-Erinnerung mit eigenen Münzen – kein Sammel-Reminder.',
       linkToGroup: 'Gruppen-Challenge (optional)',
+      totalCoins: '{{amount}} Münzen gesamt',
+      openDetails: 'Gruppen-Details anzeigen',
+      editGroup: 'Gruppe bearbeiten',
+      dissolve: 'Gruppe auflösen',
     },
   },
 
@@ -609,12 +625,14 @@ export const de = {
     listsLoad: 'Reminders-Listen werden geladen…',
     authConfirm: 'Anmeldung wird bestätigt…',
     syncRunning: 'Synchronisation läuft…',
+    syncUpload: 'Ausstehende Änderungen werden hochgeladen…',
   },
 
   boot: {
     starting: 'Live Life wird gestartet…',
     remindersRuntime: 'Apple Reminders wird vorbereitet…',
     syncing: 'Kalender und Erinnerungen werden synchronisiert…',
+    syncingClose: 'Ausstehende Änderungen werden gespeichert…',
   },
 
   modal: {

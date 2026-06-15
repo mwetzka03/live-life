@@ -4,8 +4,9 @@ import { DateUtils } from '../../domain/services/DateUtils';
 import { StreakMultiplier } from '../../domain/services/StreakMultiplier';
 import { useLocale } from '../../i18n/LocaleProvider';
 import { useAppState } from '../../hooks/useAppState';
-import { useLoading } from '../../lib/loading/LoadingProvider';
 import { AppIcon } from '../common/AppIcon';
+import { getChallengeAppearance } from '../../lib/challengeDisplay';
+import { useChallengeComplete } from '../../lib/challengeComplete/ChallengeCompleteProvider';
 
 function ChallengeReward({ challenge, date, done }: { challenge: Challenge; date: string; done: boolean }) {
   const { app } = useAppState();
@@ -43,25 +44,28 @@ interface ChallengeChipProps {
 
 export function ChallengeChip({ challenge, date, showTime = false, compact = false, onToggle }: ChallengeChipProps) {
   const { app } = useAppState();
-  const { runWithLoading } = useLoading();
-  const { t } = useLocale();
+  const { requestComplete } = useChallengeComplete();
   const done = app.challenges.isDoneOn(challenge, date);
   const streak = app.challenges.getStreak(challenge.id);
   const canToggleOff = challenge.recurrence !== 'irregular';
+  const { icon, color } = getChallengeAppearance(
+    challenge,
+    app.challengeGroups.getById.bind(app.challengeGroups),
+  );
 
   const toggle = () => {
-    void runWithLoading(async () => {
+    void (async () => {
       if (done && canToggleOff) await app.uncompleteChallenge(challenge.id, date);
-      else await app.completeChallenge(challenge.id, date);
+      else requestComplete(challenge.id, date);
       onToggle?.();
-    }, done ? t('loading.challengeReopen') : t('loading.challengeComplete'));
+    })();
   };
 
   return (
     <button
       type="button"
       className={`ll-chip challenge${done ? ' done' : ''}${compact ? ' compact' : ''}`}
-      style={{ borderColor: challenge.color, background: `${challenge.color}22` }}
+      style={{ borderColor: color, background: `${color}22` }}
       onClick={(e) => {
         e.stopPropagation();
         toggle();
@@ -70,7 +74,7 @@ export function ChallengeChip({ challenge, date, showTime = false, compact = fal
       {showTime && challenge.startTime && (
         <time className="ll-chip-time">{DateUtils.formatTime(challenge.startTime)}</time>
       )}
-      <AppIcon name={challenge.icon} size={14} color={challenge.color} />
+      <AppIcon name={icon} size={14} color={color} />
       <span>{challenge.title}</span>
       {!compact && streak > 0 && (
         <span className="ll-chip-streak">

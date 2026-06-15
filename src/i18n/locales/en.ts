@@ -28,6 +28,8 @@ export const en = {
     noneOption: '— none —',
     syncFailed: 'Sync failed',
     saveFailed: 'Save failed',
+    expand: 'Expand',
+    collapse: 'Collapse',
     connectionFailed: 'Connection failed',
     action: 'Action',
     details: 'Details',
@@ -52,6 +54,8 @@ export const en = {
     settings: 'Settings',
     settingsAria: 'Open settings',
     syncRefresh: 'Sync calendar & reminders',
+    syncUpload: 'Upload pending changes',
+    syncOutboxWarning: '{{count}} pending change(s) – please sync',
     themeToggle: 'Toggle theme',
   },
 
@@ -122,6 +126,7 @@ export const en = {
     todayProgress: '{{done}}/{{total}} done',
     completedChallengesToday: 'Completed challenges',
     completedChallengesSummary: '{{count}} done · {{coins}} coins earned',
+    scheduledRewardsCollapsed: '{{count}} rewards · {{coins}} coins pending',
     completedToday: 'Completed today',
     scheduledRewards: 'Scheduled rewards',
     rewardsEnough: 'You have enough coins ({{balance}}) for all {{count}} open rewards.',
@@ -192,6 +197,9 @@ export const en = {
     add: 'Challenge',
     tabActive: 'Active challenges',
     tabCompleted: 'Completed challenges',
+    viewAll: 'All',
+    viewGroups: 'Groups',
+    viewSingle: 'Single',
     emptyCompleted: 'No completed one-time challenges yet.',
     emptyActive: 'No active challenges yet – get started!',
     coinsReward: '+{{amount}} coins',
@@ -201,6 +209,12 @@ export const en = {
     timesDone: 'Completed {{count}}×',
     reset: 'Reset',
     completeToday: 'Today ✓',
+    completeDate: {
+      title: 'Choose completion date',
+      hint: '"{{title}}" is scheduled for {{date}}. When should the completion count?',
+      today: 'Count for today',
+      scheduled: 'Count on {{date}}',
+    },
     modal: {
       editTitle: 'Edit challenge',
       newTitle: 'New challenge',
@@ -250,6 +264,7 @@ export const en = {
         'Date and time sync automatically when changed in iCloud.',
       fromReminder: 'From reminder: {{recurrence}}',
       createChallenge: 'Create challenge',
+      collapsedSummary: '{{count}} open',
     },
     groups: {
       add: 'Group',
@@ -262,10 +277,11 @@ export const en = {
       linkExisting: 'Link existing',
       link: 'Link',
       createNew: 'New individual challenge',
-      appleReminder: 'Apple reminder with subtasks (optional)',
-      icloudSubtasksHint:
-        'Creates a separate Apple Reminder for each group entry with its own coins – no combined parent reminder.',
       linkToGroup: 'Group challenge (optional)',
+      totalCoins: '{{amount}} coins total',
+      openDetails: 'Show group details',
+      editGroup: 'Edit group',
+      dissolve: 'Dissolve group',
     },
   },
 
@@ -609,12 +625,14 @@ export const en = {
     listsLoad: 'Loading reminder lists…',
     authConfirm: 'Confirming sign-in…',
     syncRunning: 'Syncing…',
+    syncUpload: 'Uploading pending changes…',
   },
 
   boot: {
     starting: 'Starting Live Life…',
     remindersRuntime: 'Preparing Apple Reminders…',
     syncing: 'Syncing calendars and reminders…',
+    syncingClose: 'Saving pending changes…',
   },
 
   modal: {

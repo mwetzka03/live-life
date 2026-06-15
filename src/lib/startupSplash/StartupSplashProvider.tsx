@@ -52,7 +52,12 @@ export function StartupSplashProvider({ children }: { children: ReactNode }) {
     <StartupSplashContext.Provider value={value}>
       {children}
       {state.visible && (
-        <div className="ll-loading-overlay ll-startup-overlay" role="status" aria-live="polite">
+        <div
+          className="ll-loading-overlay ll-startup-overlay"
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+        >
           <div className="ll-loading-card ll-startup-card">
             <Lottie
               animationData={startupAnimation}
