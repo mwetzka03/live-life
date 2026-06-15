@@ -1,5 +1,6 @@
 import { getAppState } from '../domain/services/AppStateService';
 import { devLog } from './startupDevLog';
+import { flushSyncOutbox } from './manualSync';
 
 let startupSyncPromise: Promise<void> | null = null;
 
@@ -9,6 +10,8 @@ export async function runStartupSyncOnce(): Promise<void> {
   }
 
   startupSyncPromise = (async () => {
+    await flushSyncOutbox();
+
     const app = getAppState();
     const calDav = app.calDavAccounts.getAll().filter((a) => a.enabled && a.autoSync);
     const appleReminders = app.appleRemindersAccounts

@@ -5,6 +5,7 @@ import { useAppState } from '../../hooks/useAppState';
 import { useLoading } from '../../lib/loading/LoadingProvider';
 import { AppIcon, ColorPicker, IconPicker } from '../common/AppIcon';
 import { Modal } from '../common/Modal';
+import { InfoPanel } from '../common/InfoPanel';
 import { parseCalendarSyncSourceId } from '../../lib/caldavAccount';
 import { EventChallengeAssign } from './EventChallengeAssign';
 import { EventShopAssign } from './EventShopAssign';
@@ -83,7 +84,20 @@ export function EventModal({ open, eventId, defaultDate, onClose }: EventModalPr
   return (
     <Modal open={open} title={modalTitle} onClose={onClose}>
       <div className="ll-form">
-        {isReadOnly && <p className="ll-form-hint">{t('calendar.eventModal.readOnlyHint')}</p>}
+        {isReadOnly && (
+          <InfoPanel
+            items={[
+              t('calendar.eventModal.readOnlyHint'),
+              existing?.linkedChallengeId ? t('calendar.eventModal.challengeCheckoffHint') : '',
+              existing?.isRecurring ? t('calendar.eventModal.deleteSeriesInstanceHint') : '',
+            ]}
+          />
+        )}
+
+        {eventId && existing?.syncKind === 'reminder' && !existing.linkedChallengeId && (
+          <p className="ll-form-hint ll-recurring-badge">{t('calendar.eventModal.reminderHint')}</p>
+        )}
+
         <label>
           {t('common.title')}
           <input
@@ -126,18 +140,6 @@ export function EventModal({ open, eventId, defaultDate, onClose }: EventModalPr
           </>
         )}
 
-        {isReadOnly && existing?.linkedChallengeId && (
-          <p className="ll-form-hint">{t('calendar.eventModal.challengeCheckoffHint')}</p>
-        )}
-
-        {isReadOnly && existing?.isRecurring && (
-          <p className="ll-form-hint">{t('calendar.eventModal.deleteSeriesInstanceHint')}</p>
-        )}
-
-        {eventId && existing?.syncKind === 'reminder' && !existing.linkedChallengeId && (
-          <p className="ll-form-hint ll-recurring-badge">{t('calendar.eventModal.reminderHint')}</p>
-        )}
-
         {eventId && !existing?.linkedShopItemId && existing?.readOnly && (
           <EventChallengeAssign
             eventId={eventId}
@@ -161,10 +163,12 @@ export function EventModal({ open, eventId, defaultDate, onClose }: EventModalPr
           />
         )}
 
-        <div className="ll-form-preview">
-          <AppIcon name={icon} size={20} color={color} />
-          <span style={{ color }}>{title || t('common.preview')}</span>
-        </div>
+        {!existing?.linkedChallengeId && (
+          <div className="ll-form-preview">
+            <AppIcon name={icon} size={20} color={color} />
+            <span style={{ color }}>{title || t('common.preview')}</span>
+          </div>
+        )}
 
         <div className="ll-form-actions">
           {canDelete && (

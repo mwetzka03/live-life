@@ -205,10 +205,10 @@ export function ChallengeGroupModal({ open, groupId, onClose }: ChallengeGroupMo
         isTauriApp() &&
         icloudListKey &&
         savedId &&
-        (!existing?.icloudReminderHref || icloudListKey !== existing?.icloudReminderSourceId);
+        (!existing?.icloudSubtaskHrefs || icloudListKey !== existing?.icloudReminderSourceId);
 
       if (shouldCreateICloud && savedId) {
-        await app.createChallengeGroupICloudReminder(savedId, icloudListKey);
+        app.queueCreateChallengeGroupICloudReminder(savedId, icloudListKey);
       }
 
       onClose();

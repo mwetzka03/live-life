@@ -5,6 +5,8 @@ use std::sync::{Mutex, OnceLock};
 use tauri::path::BaseDirectory;
 use tauri::{AppHandle, Manager};
 
+use crate::process_util::hide_console;
+
 static SCRIPTS_DIR: OnceLock<PathBuf> = OnceLock::new();
 static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
 static SETUP_ONCE: Mutex<Option<bool>> = Mutex::new(None);
@@ -170,6 +172,7 @@ fn pyicloud_ready() -> bool {
     for arg in prefix {
       cmd.arg(arg);
     }
+    hide_console(&mut cmd);
     let ok = cmd
       .args(["-c", "import pyicloud, tzlocal"])
       .output()

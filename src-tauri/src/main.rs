@@ -3,6 +3,7 @@
 mod caldav;
 mod icloud_reminders;
 mod models;
+mod process_util;
 
 use icloud_reminders::{
   AppleRemindersConfigDto, AppleRemindersListDto, AppleRemindersListFetchDto, init_scripts_dir,

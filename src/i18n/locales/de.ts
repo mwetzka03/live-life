@@ -51,6 +51,7 @@ export const de = {
     wallet: '{{balance}} Münzen',
     settings: 'Einstellungen',
     settingsAria: 'Einstellungen öffnen',
+    syncRefresh: 'Kalender & Erinnerungen synchronisieren',
     themeToggle: 'Theme wechseln',
   },
 

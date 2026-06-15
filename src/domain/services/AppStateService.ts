@@ -5,6 +5,15 @@ import { mergeAppleReminderLists } from '../../lib/appleReminderListOptions';
 import { AppleRemindersApi } from './AppleRemindersApi';
 import { CalDavApi, isTauriApp } from './CalDavApi';
 import { devLog } from '../../lib/startupDevLog';
+import {
+  enqueueICloudCreate,
+  enqueueICloudCreateGroup,
+  enqueueICloudDelete,
+  enqueueICloudStatus,
+  getSyncOutbox,
+  removeOutboxEntry,
+  type SyncOutboxEntry,
+} from '../../lib/syncOutbox';
 import { LocalStorageRepository } from '../repositories/LocalStorageRepository';
 import { CalendarService } from './CalendarService';
 import { CalDavAccountService, CalDavSyncService, type SyncResult } from './CalDavSyncService';
@@ -737,6 +746,64 @@ export class AppStateService {
     return null;
   }
 
+  queueChallengeReminderInICloud(challengeId: string, completed: boolean): void {
+    if (this.suppressICloudPush || !isTauriApp()) return;
+    enqueueICloudStatus(challengeId, completed);
+  }
+
+  async processSyncOutbox(): Promise<void> {
+    if (!isTauriApp()) return;
+    const entries = getSyncOutbox();
+    if (entries.length === 0) return;
+
+    devLog(`Sync-Outbox: ${entries.length} Eintrag/Einträge`, 'info', 'SyncOutbox');
+
+    for (const entry of entries) {
+      try {
+        await this.processOutboxEntry(entry);
+        removeOutboxEntry(entry.id);
+      } catch (error) {
+        devLog(
+          `Outbox fehlgeschlagen (${entry.type}): ${error instanceof Error ? error.message : String(error)}`,
+          'error',
+          'SyncOutbox',
+        );
+      }
+    }
+  }
+
+  private async processOutboxEntry(entry: SyncOutboxEntry): Promise<void> {
+    switch (entry.type) {
+      case 'icloud-status':
+        await this.syncChallengeReminderInICloud(entry.challengeId, entry.completed);
+        return;
+      case 'icloud-create':
+        await this.createChallengeICloudReminder(entry.challengeId, entry.sourceId);
+        return;
+      case 'icloud-create-group':
+        await this.createChallengeGroupICloudReminder(entry.groupId, entry.sourceId);
+        return;
+      case 'icloud-delete': {
+        const account = this.appleRemindersAccounts.getById(entry.accountId);
+        if (!account) return;
+        await AppleRemindersApi.deleteReminder(account, entry.listGuid, entry.href);
+        return;
+      }
+      default:
+        return;
+    }
+  }
+
+  queueCreateChallengeICloudReminder(challengeId: string, sourceId: string): void {
+    if (!isTauriApp()) return;
+    enqueueICloudCreate(challengeId, sourceId);
+  }
+
+  queueCreateChallengeGroupICloudReminder(groupId: string, sourceId: string): void {
+    if (!isTauriApp()) return;
+    enqueueICloudCreateGroup(groupId, sourceId);
+  }
+
   async syncChallengeReminderInICloud(challengeId: string, completed: boolean): Promise<void> {
     const challenge = this.challenges.getById(challengeId);
     if (!challenge?.icloudReminderHref) {
@@ -889,7 +956,7 @@ export class AppStateService {
         const account = this.appleRemindersAccounts.getById(parsed.accountId);
         if (account && group.icloudSubtaskHrefs) {
           for (const href of Object.values(group.icloudSubtaskHrefs)) {
-            await AppleRemindersApi.deleteReminder(account, parsed.listGuid, href).catch(() => {});
+            enqueueICloudDelete(parsed.accountId, parsed.listGuid, href);
           }
         }
       }
@@ -1029,10 +1096,7 @@ export class AppStateService {
     if (isTauriApp()) {
       const target = this.findAppleReminderTarget(id);
       if (target) {
-        const account = this.appleRemindersAccounts.getById(target.accountId);
-        if (account) {
-          await AppleRemindersApi.deleteReminder(account, target.listGuid, target.href);
-        }
+        enqueueICloudDelete(target.accountId, target.listGuid, target.href);
       }
     }
     const challenge = this.challenges.getById(id);
@@ -1061,9 +1125,7 @@ export class AppStateService {
     this.persistChallengeState();
 
     if (!this.suppressICloudPush) {
-      void this.syncChallengeReminderInICloud(challengeId, true).catch(() => {
-        // iCloud-Sync darf UI nicht blockieren
-      });
+      this.queueChallengeReminderInICloud(challengeId, true);
     }
 
     return completion;
@@ -1084,9 +1146,7 @@ export class AppStateService {
     this.persistChallengeState();
 
     if (!this.suppressICloudPush) {
-      void this.syncChallengeReminderInICloud(event.linkedChallengeId, true).catch(() => {
-        // iCloud-Sync darf UI nicht blockieren
-      });
+      this.queueChallengeReminderInICloud(event.linkedChallengeId, true);
     }
 
     return completion;
@@ -1099,9 +1159,7 @@ export class AppStateService {
     this.persistChallengeState();
 
     if (!this.suppressICloudPush) {
-      void this.syncChallengeReminderInICloud(challengeId, false).catch(() => {
-        // iCloud-Sync darf UI nicht blockieren
-      });
+      this.queueChallengeReminderInICloud(challengeId, false);
     }
 
     return removed;

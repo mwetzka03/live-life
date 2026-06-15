@@ -1,13 +1,29 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { CalendarDays, Coins, LayoutDashboard, Settings, ShoppingBag, Target } from 'lucide-react';
+import { CalendarDays, Coins, LayoutDashboard, RefreshCw, Settings, ShoppingBag, Target } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useLocale } from '../../i18n/LocaleProvider';
 import { useAppState } from '../../hooks/useAppState';
+import { isTauriApp } from '../../domain/services/CalDavApi';
+import { runManualSync } from '../../lib/manualSync';
+import { getSyncOutboxCount, subscribeSyncOutbox } from '../../lib/syncOutbox';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { balance } = useAppState();
   const { t } = useLocale();
   const { pathname } = useLocation();
   const isSettings = pathname.startsWith('/settings');
+  const [syncing, setSyncing] = useState(false);
+  const [outboxCount, setOutboxCount] = useState(() => getSyncOutboxCount());
+
+  useEffect(() => subscribeSyncOutbox(() => setOutboxCount(getSyncOutboxCount())), []);
+
+  const pendingOutbox = outboxCount > 0;
+
+  const onManualSync = () => {
+    if (!isTauriApp() || syncing) return;
+    setSyncing(true);
+    void runManualSync().finally(() => setSyncing(false));
+  };
 
   return (
     <div className="ll-app">
@@ -43,14 +59,32 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </NavLink>
         </nav>
 
-        <NavLink
-          to="/settings"
-          className={({ isActive }) => `ll-topbar-settings${isActive ? ' active' : ''}`}
-          aria-label={t('nav.settingsAria')}
-          title={t('nav.settings')}
-        >
-          <Settings size={22} />
-        </NavLink>
+        <div className="ll-topbar-actions">
+          {isTauriApp() && (
+            <button
+              type="button"
+              className={`ll-topbar-sync${syncing ? ' syncing' : ''}${pendingOutbox ? ' pending' : ''}`}
+              onClick={onManualSync}
+              disabled={syncing}
+              aria-label={t('nav.syncRefresh')}
+              title={
+                pendingOutbox
+                  ? `${t('nav.syncRefresh')} (${outboxCount})`
+                  : t('nav.syncRefresh')
+              }
+            >
+              <RefreshCw size={20} className={syncing ? 'll-spin' : undefined} />
+            </button>
+          )}
+          <NavLink
+            to="/settings"
+            className={({ isActive }) => `ll-topbar-settings${isActive ? ' active' : ''}`}
+            aria-label={t('nav.settingsAria')}
+            title={t('nav.settings')}
+          >
+            <Settings size={22} />
+          </NavLink>
+        </div>
       </header>
       <main className={`ll-main${isSettings ? ' ll-scroll-page' : ' ll-main-fit'}`}>{children}</main>
     </div>

@@ -570,9 +570,8 @@ export function CalDavAccountModal({ open, accountId, onClose }: CalDavAccountMo
             enabled,
             autoSync,
           });
-          await app.syncCalDavAccount(accountId);
         } else {
-          const account = app.createCalDavAccount({
+          app.createCalDavAccount({
             name: name.trim(),
             provider,
             serverUrl: serverUrl.trim(),
@@ -582,7 +581,6 @@ export function CalDavAccountModal({ open, accountId, onClose }: CalDavAccountMo
             enabled,
             autoSync,
           });
-          await app.syncCalDavAccount(account.id);
         }
       }, t('loading.accountSave'));
       onClose();

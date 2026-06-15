@@ -51,6 +51,7 @@ export const en = {
     wallet: '{{balance}} Coins',
     settings: 'Settings',
     settingsAria: 'Open settings',
+    syncRefresh: 'Sync calendar & reminders',
     themeToggle: 'Toggle theme',
   },
 

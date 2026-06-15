@@ -9,6 +9,7 @@ import { useAppState } from '../../hooks/useAppState';
 import { getStoredAppleReminderListOptions } from '../../lib/appleReminderListOptions';
 import { useLoading } from '../../lib/loading/LoadingProvider';
 import { AppIcon, ColorPicker, IconPicker } from '../common/AppIcon';
+import { InfoPanel } from '../common/InfoPanel';
 import { Modal } from '../common/Modal';
 import { AcceptReminderModal, ReminderSuggestions } from './ReminderSuggestions';
 import { ChallengeGroupCard, ChallengeGroupModal } from './ChallengeGroupModal';
@@ -455,7 +456,7 @@ function ChallengeModal({ open, challengeId, onClose }: ChallengeModalProps) {
         (!existing?.icloudReminderHref || icloudListKey !== existing?.icloudReminderSourceId);
 
       if (shouldCreateICloud && savedId) {
-        await app.createChallengeICloudReminder(savedId, icloudListKey);
+        app.queueCreateChallengeICloudReminder(savedId, icloudListKey);
       }
 
       onClose();
@@ -609,23 +610,25 @@ function ChallengeModal({ open, challengeId, onClose }: ChallengeModalProps) {
           <p className="ll-form-hint">{t('challenges.modal.icloudOnceOnly')}</p>
         )}
         {icloudLinked && (
-          <p className="ll-form-hint">{t('challenges.modal.icloudNoEndTime')}</p>
+          <InfoPanel
+            items={[
+              t('challenges.modal.icloudNoEndTime'),
+              t('challenges.modal.icloudDelay'),
+              t('challenges.modal.icloudDeleteLinked'),
+              existing?.icloudReminderHref ? t('challenges.modal.icloudLinked') : '',
+              recurrence !== 'none' && recurrence !== 'irregular'
+                ? t('challenges.modal.streakBonus')
+                : '',
+            ]}
+          />
         )}
-        {icloudLinked && (
-          <p className="ll-form-hint">{t('challenges.modal.icloudDelay')}</p>
-        )}
-        {icloudLinked && (
-          <p className="ll-form-hint">{t('challenges.modal.icloudDeleteLinked')}</p>
-        )}
+
         {saveError && <p className="ll-form-hint error-text">{saveError}</p>}
         {isTauriApp() && hasAppleAccounts && icloudListOptions.length === 0 && (
           <p className="ll-form-hint">{t('challenges.modal.noListsCache')}</p>
         )}
         {isTauriApp() && !hasAppleAccounts && (
           <p className="ll-form-hint">{t('challenges.modal.needAppleAccount')}</p>
-        )}
-        {existing?.icloudReminderHref && (
-          <p className="ll-form-hint">{t('challenges.modal.icloudLinked')}</p>
         )}
 
         {recurrence === 'none' && app.challengeGroups.getAll().length > 0 && (
@@ -642,7 +645,9 @@ function ChallengeModal({ open, challengeId, onClose }: ChallengeModalProps) {
           </label>
         )}
 
-        <p className="ll-form-hint">{t('challenges.modal.streakBonus')}</p>
+        {!icloudLinked && recurrence !== 'none' && recurrence !== 'irregular' && (
+          <p className="ll-form-hint">{t('challenges.modal.streakBonus')}</p>
+        )}
 
         <label>{t('common.icon')}</label>
         <IconPicker value={icon} onChange={setIcon} />

@@ -6,6 +6,7 @@ import { useLocale } from '../../i18n/LocaleProvider';
 import { useAppState } from '../../hooks/useAppState';
 import { useLoading } from '../../lib/loading/LoadingProvider';
 import { AppIcon } from '../common/AppIcon';
+import { InfoPanel } from '../common/InfoPanel';
 
 interface EventChallengeAssignProps {
   eventId: string;
@@ -108,10 +109,12 @@ export function EventChallengeAssign({
           {recurrence && recurrence !== 'none' && ` · ${dict.labels.recurrence[recurrence]}`}
         </p>
       )}
-      <p className="ll-form-hint">
-        {t('calendar.challengeAssign.hint')}
-        {isRecurring && t('calendar.challengeAssign.recurringHint')}
-      </p>
+      <InfoPanel
+        items={[
+          t('calendar.challengeAssign.hint') +
+            (isRecurring ? t('calendar.challengeAssign.recurringHint') : ''),
+        ]}
+      />
 
       {linkedGroup && (
         <div className="ll-linked-challenge">

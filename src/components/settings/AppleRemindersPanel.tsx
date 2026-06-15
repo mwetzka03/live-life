@@ -437,9 +437,8 @@ export function AppleRemindersAccountModal({ open, accountId, onClose }: AppleRe
             enabled,
             autoSync,
           });
-          await app.syncAppleRemindersAccount(accountId);
         } else {
-          const account = app.createAppleRemindersAccount({
+          app.createAppleRemindersAccount({
             name: name.trim(),
             appleId: appleId.trim(),
             password: pwd,
@@ -447,7 +446,6 @@ export function AppleRemindersAccountModal({ open, accountId, onClose }: AppleRe
             enabled,
             autoSync,
           });
-          await app.syncAppleRemindersAccount(account.id);
         }
       }, t('loading.accountSave'));
       onClose();

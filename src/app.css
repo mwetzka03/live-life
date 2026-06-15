@@ -1097,6 +1097,71 @@ textarea {
   border-radius: 10px;
 }
 
+.ll-info-panel {
+  margin: 0.65rem 0;
+  padding: 0.75rem 0.9rem;
+  border-radius: 10px;
+  background: var(--ll-bg-muted);
+  border: 1px solid var(--ll-border);
+}
+
+.ll-info-panel ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  color: var(--ll-text-muted);
+  line-height: 1.45;
+}
+
+.ll-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.ll-topbar-sync {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ll-text-muted);
+  cursor: pointer;
+}
+
+.ll-topbar-sync:hover,
+.ll-topbar-sync:focus-visible {
+  color: var(--ll-accent);
+  background: var(--ll-accent-soft);
+}
+
+.ll-topbar-sync.pending {
+  color: var(--ll-accent);
+  border-color: color-mix(in srgb, var(--ll-accent) 35%, transparent);
+}
+
+.ll-topbar-sync.syncing {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.ll-spin {
+  animation: ll-spin 0.9s linear infinite;
+}
+
+@keyframes ll-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .ll-today-panel {
   background: linear-gradient(135deg, var(--ll-accent-soft), var(--ll-bg-card));
   border: 1px solid var(--ll-border);
@@ -1993,9 +2058,12 @@ textarea {
 }
 
 .ll-event-challenge-assign {
-  margin-top: 0.5rem;
-  padding-top: 0.75rem;
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
   border-top: 1px solid var(--ll-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
 }
 
 .ll-event-assign-row {
@@ -2030,6 +2098,8 @@ textarea {
   padding: 0.6rem 0.75rem;
   background: var(--ll-bg-muted);
   border-radius: 10px;
+  border: 1px solid var(--ll-border);
+  margin-top: 0.25rem;
 }
 
 .ll-linked-challenge > div {

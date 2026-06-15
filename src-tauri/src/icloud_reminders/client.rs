@@ -5,6 +5,7 @@ use std::process::Command;
 use serde::Deserialize;
 
 use crate::models::SyncedEventDto;
+use crate::process_util::hide_console;
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -96,6 +97,7 @@ fn find_python_with_pyicloud() -> Result<String, String> {
     for arg in prefix {
       check.arg(arg);
     }
+    hide_console(&mut check);
     let ok = check
       .args(["-c", "import pyicloud, tzlocal"])
       .output()
@@ -210,6 +212,7 @@ fn run_python(
 
   cmd.env("PYTHONIOENCODING", "utf-8");
   cmd.env("PYTHONUTF8", "1");
+  hide_console(&mut cmd);
 
   cmd.output().map_err(|e| format!("Python-Aufruf fehlgeschlagen: {e}"))
 }
